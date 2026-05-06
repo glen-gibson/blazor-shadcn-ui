@@ -45,6 +45,16 @@ public partial class FilterBuilder<TData> : ComponentBase, IFilterBuilderContext
     /// <summary>Additional CSS classes for the wrapper element.</summary>
     [Parameter] public string? Class { get; set; }
 
+    /// <summary>
+    /// Maximum number of preset tabs to show inline when <see cref="PresetsVariant"/> is
+    /// <see cref="FilterPresetsVariant.Tabs"/>. Presets beyond this count overflow into a
+    /// "More ▾" dropdown appended as the last tab slot. The slot label updates dynamically
+    /// to reflect the currently selected overflow preset.
+    /// Has no effect when <see cref="PresetsVariant"/> is <see cref="FilterPresetsVariant.Dropdown"/>
+    /// or when <see langword="null"/> (default — all presets shown as tabs).
+    /// </summary>
+    [Parameter] public int? MaxTabs { get; set; }
+
     [CascadingParameter(Name = "StyleVariant")]
     private StyleVariant _styleVariant { get; set; } = StyleVariant.Default;
 
@@ -194,6 +204,18 @@ public partial class FilterBuilder<TData> : ComponentBase, IFilterBuilderContext
 
     // ── Tab helpers ────────────────────────────────────────────────────────────
 
+    /// <summary>Presets shown as tabs. When <see cref="MaxTabs"/> is set, limited to the first N presets.</summary>
+    private IReadOnlyList<FilterPresetDefinition> VisiblePresets =>
+        MaxTabs.HasValue ? _presets.Take(Math.Max(1, MaxTabs.Value)).ToList() : _presets;
+
+    /// <summary>Presets that overflow into the More dropdown. Empty when <see cref="MaxTabs"/> is null.</summary>
+    private IReadOnlyList<FilterPresetDefinition> OverflowPresets =>
+        MaxTabs.HasValue ? _presets.Skip(Math.Max(1, MaxTabs.Value)).ToList() : Array.Empty<FilterPresetDefinition>();
+
+    /// <summary>The overflow preset that is currently active, derived from <see cref="_activePresetName"/>.</summary>
+    private FilterPresetDefinition? CurrentOverflowPreset =>
+        _activePresetName != null ? OverflowPresets.FirstOrDefault(p => p.Name == _activePresetName) : null;
+
     /// <summary>CSS classes for the preset tab bar container, sized to match <see cref="ChipSize"/>.</summary>
     private string TabsContainerClass => ClassNames.cn(
         "inline-flex items-center rounded-md bg-muted p-0.5",
@@ -207,9 +229,14 @@ public partial class FilterBuilder<TData> : ComponentBase, IFilterBuilderContext
         });
 
     /// <summary>Returns CSS classes for a preset tab button. Pass null for the "All" tab.</summary>
-    private string GetTabClass(string? presetName)
+    private string GetTabClass(string? presetName) => BuildTabClass(presetName == _activePresetName);
+
+    /// <summary>Returns CSS classes for the "More" overflow tab button.</summary>
+    private string GetMoreTabClass() => BuildTabClass(CurrentOverflowPreset != null);
+
+    /// <summary>Shared tab-button CSS builder to ensure visual consistency across all tab slots.</summary>
+    private string BuildTabClass(bool isActive)
     {
-        var isActive = presetName == _activePresetName;
         var itemHeight = ChipSize switch
         {
             FilterChipSize.Small  => "h-7",

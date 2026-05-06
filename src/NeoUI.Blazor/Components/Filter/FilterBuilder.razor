@@ -106,7 +106,7 @@
                             @onclick="@ClearAll">
                         All
                     </button>
-                    @foreach (var preset in _presets)
+                    @foreach (var preset in VisiblePresets)
                     {
                         var p = preset;
                         <button type="button"
@@ -118,6 +118,36 @@
                             }
                             @p.Name
                         </button>
+                    }
+                    @if (OverflowPresets.Any())
+                    {
+                        <DropdownMenu>
+                            <DropdownMenuTrigger Class="@GetMoreTabClass()">
+                                @if (CurrentOverflowPreset != null && !string.IsNullOrEmpty(CurrentOverflowPreset.Icon))
+                                {
+                                    <LucideIcon Name="@CurrentOverflowPreset.Icon" Size="12" Class="opacity-70 shrink-0" />
+                                }
+                                <span>@(CurrentOverflowPreset?.Name ?? "More")</span>
+                                <LucideIcon Name="chevron-down" Size="10" Class="opacity-60 shrink-0" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent Align="PopoverAlign.Start" Class="w-48">
+                                @foreach (var preset in OverflowPresets)
+                                {
+                                    var p = preset;
+                                    <DropdownMenuItem OnClick="@((MouseEventArgs _) => ApplyPreset(p))">
+                                        @if (!string.IsNullOrEmpty(p.Icon))
+                                        {
+                                            <LucideIcon Name="@p.Icon" Size="14" Class="mr-2 opacity-70 shrink-0" />
+                                        }
+                                        <span>@p.Name</span>
+                                        @if (_activePresetName == p.Name)
+                                        {
+                                            <LucideIcon Name="check" Size="12" Class="ml-auto opacity-70" />
+                                        }
+                                    </DropdownMenuItem>
+                                }
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     }
                 </div>
             }

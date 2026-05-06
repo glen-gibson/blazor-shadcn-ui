@@ -70,6 +70,7 @@ Each active condition is rendered on its **own row** as a segmented chip:
 | `FilterPresets` | `RenderFragment?` | `null` | Slot for `FilterPreset` children. Adds a Presets button or tab bar. |
 | `ButtonText` | `string` | `"Filter"` | Label on the add-filter button (when no conditions are active). |
 | `PresetsVariant` | `FilterPresetsVariant` | `Dropdown` | How presets are rendered: `Dropdown` (button + menu) or `Tabs` (horizontal tab bar with implicit "All" tab). |
+| `MaxTabs` | `int?` | `null` | Maximum visible preset tabs when using `Tabs` variant. Presets beyond this count overflow into a "More ▾" dropdown appended as the last tab slot. The slot label updates dynamically to show the active overflow preset name. Has no effect on `Dropdown` variant or when `null`. |
 | `ChipSize` | `FilterChipSize` | `Small` | Height of every chip: `Small` (h-7), `Medium` (h-8), `Large` (h-9). |
 | `Class` | `string?` | `null` | Additional CSS classes for the wrapper. |
 
