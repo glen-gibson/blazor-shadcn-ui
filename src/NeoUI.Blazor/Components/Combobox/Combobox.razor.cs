@@ -79,6 +79,14 @@ public partial class Combobox<TItem> : ComponentBase
     public Func<TItem, string> DisplaySelector { get; set; } = default!;
 
     /// <summary>
+    /// Gets or sets an optional function to extract a Lucide icon name from an item.
+    /// When provided, the icon is rendered before the display text in each list item.
+    /// Items with a null or empty icon get a fixed-width spacer so text stays aligned.
+    /// </summary>
+    [Parameter]
+    public Func<TItem, string?>? IconSelector { get; set; }
+
+    /// <summary>
     /// Gets or sets the placeholder text shown in the button when no item is selected.
     /// When null, falls back to the localizer value for "Combobox.Placeholder".
     /// </summary>
@@ -159,6 +167,14 @@ public partial class Combobox<TItem> : ComponentBase
     /// </summary>
     [Parameter]
     public string? EndOfListMessage { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether the search query is cleared after a selection is made.
+    /// Useful in one-shot picker scenarios where the combobox is reopened for a fresh selection.
+    /// Defaults to <c>false</c> to preserve the existing persistent-search behavior.
+    /// </summary>
+    [Parameter]
+    public bool ClearSearchOnSelect { get; set; }
 
     /// <summary>
     /// Gets or sets the callback invoked on every search keystroke.
@@ -294,6 +310,9 @@ public partial class Combobox<TItem> : ComponentBase
 
         Value = newValue;
         await ValueChanged.InvokeAsync(newValue);
+
+        if (ClearSearchOnSelect)
+            _commandSearchQuery = string.Empty;
 
         // Close the popover after selection
         _isOpen = false;

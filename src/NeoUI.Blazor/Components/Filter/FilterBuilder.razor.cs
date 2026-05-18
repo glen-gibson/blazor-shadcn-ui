@@ -15,6 +15,7 @@ public partial class FilterBuilder<TData> : ComponentBase, IFilterBuilderContext
     private FilterGroup _rootGroup = new();
     private HashSet<string> _lastEmittedIds = new();
     private string? _activePresetName;
+    private string? _fieldPickerSelected;
 
     // ── Parameters ──────────────────────────────────────────────────────────
 
@@ -67,6 +68,13 @@ public partial class FilterBuilder<TData> : ComponentBase, IFilterBuilderContext
     /// Defaults to false to preserve the legacy flat-chip behaviour.
     /// </summary>
     [Parameter] public bool AllowGroups { get; set; } = false;
+
+    /// <summary>
+    /// Controls how the field picker is rendered.
+    /// Use <see cref="FilterFieldPickerVariant.Combobox"/> when the field list is long (15+ items)
+    /// to enable search. Defaults to <see cref="FilterFieldPickerVariant.Dropdown"/>.
+    /// </summary>
+    [Parameter] public FilterFieldPickerVariant FieldPickerVariant { get; set; } = FilterFieldPickerVariant.Dropdown;
 
     // ── Computed ─────────────────────────────────────────────────────────────
 
@@ -192,6 +200,14 @@ public partial class FilterBuilder<TData> : ComponentBase, IFilterBuilderContext
     {
         _ = NotifyFiltersChanged();
         return Task.CompletedTask;
+    }
+
+    private void HandleFieldPickerSelected(string? fieldKey)
+    {
+        if (string.IsNullOrEmpty(fieldKey)) return;
+        _fieldPickerSelected = null;
+        var field = _fields.FirstOrDefault(f => f.Field == fieldKey);
+        if (field != null) AddCondition(field);
     }
 
     private Task HandleGroupChanged()

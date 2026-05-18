@@ -64,6 +64,7 @@
                           Fields="@Fields"
                           ChipSize="@ChipSize"
                           IsRoot="false"
+                          FieldPickerVariant="@FieldPickerVariant"
                           MaxNestingDepth="@MaxNestingDepth"
                           CurrentDepth="@(CurrentDepth + 1)"
                           OnChanged="@OnChanged"
@@ -71,6 +72,25 @@
     }
 
     <div class="flex items-center gap-2 mt-2">
+        @if (FieldPickerVariant == FilterFieldPickerVariant.Combobox)
+        {
+        <Combobox TItem="FilterFieldDefinition"
+                  Items="@Fields"
+                  Value="@_fieldPickerSelected"
+                  ValueChanged="@HandleFieldPickerSelected"
+                  ValueSelector="@(f => f.Field)"
+                  DisplaySelector="@(f => f.Label)"
+                  IconSelector="@(f => f.Icon)"
+                  ClearSearchOnSelect="true"
+                  Placeholder="Add predicate"
+                  SearchPlaceholder="Search fields..."
+                  EmptyMessage="No fields found."
+                  Disabled="@(!Fields.Any())"
+                  PopoverWidth="w-56"
+                  Class="h-7 px-2 text-xs justify-start" />
+        }
+        else
+        {
         <DropdownMenu>
             <DropdownMenuTrigger>
                 <Button Variant="ButtonVariant.Outline"
@@ -123,6 +143,7 @@
                 }
             </DropdownMenuContent>
         </DropdownMenu>
+        }
 
         @if (CurrentDepth < MaxNestingDepth)
         {
@@ -149,6 +170,9 @@
 
     [Parameter] public EventCallback OnClearAll { get; set; }
     [Parameter] public bool HasActiveFilters { get; set; }
+    [Parameter] public FilterFieldPickerVariant FieldPickerVariant { get; set; }
+
+    private string? _fieldPickerSelected;
 
     private string PanelCssClass => IsRoot
         ? string.Empty
@@ -174,6 +198,14 @@
         });
 
         await NotifyChanged();
+    }
+
+    private async Task HandleFieldPickerSelected(string? fieldKey)
+    {
+        if (string.IsNullOrEmpty(fieldKey)) return;
+        _fieldPickerSelected = null;
+        var field = Fields.FirstOrDefault(f => f.Field == fieldKey);
+        if (field != null) await AddCondition(field);
     }
 
     private async Task AddConditionWithValue(FilterFieldDefinition field, string optionValue)

@@ -2,7 +2,72 @@
 
 All notable changes to this project will be documented in this file.
 
-## 2026-5-17 — DateInput, TimeInput & FilterBuilder Nested Groups
+## 2026-5-18 — Combobox Enhancements & FilterBuilder Searchable Field Picker
+
+> **Targeting: `v4.1.1`**  
+> **Affects `NeoUI.Blazor`.** Additive — no breaking changes.
+
+---
+
+### ✨ Enhancement — `Combobox<TItem>`: optional icon rendering per item
+
+Added `IconSelector` (`Func<TItem, string?>?`) parameter. When provided, a Lucide icon is rendered before the display text in each list item. Items that return a null or empty icon value get a fixed-width spacer so text stays aligned across mixed icon/no-icon lists.
+
+```razor
+<Combobox TItem="Field"
+          Items="@fields"
+          @bind-Value="selected"
+          ValueSelector="@(f => f.Key)"
+          DisplaySelector="@(f => f.Label)"
+          IconSelector="@(f => f.Icon)" />
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `IconSelector` | `Func<TItem, string?>?` | `null` | Returns a Lucide icon name for each item. `null` disables icon rendering entirely. |
+
+---
+
+### ✨ Enhancement — `Combobox<TItem>`: `ClearSearchOnSelect` parameter
+
+Added `ClearSearchOnSelect` (`bool`, default `false`). When `true`, the search query is reset to empty after a selection is made. Useful in one-shot picker scenarios where the combobox is reopened for a fresh selection, avoiding stale search text from the previous open.
+
+```razor
+<Combobox ... ClearSearchOnSelect="true" />
+```
+
+---
+
+### ✨ New Feature — `FilterBuilder`: searchable field picker via `FieldPickerVariant`
+
+Added `FieldPickerVariant` (`FilterFieldPickerVariant`, default `Dropdown`) parameter to `FilterBuilder<TData>`. When set to `Combobox`, the field picker button opens a searchable combobox instead of the hierarchical dropdown menu — recommended when the field list exceeds ~15 items.
+
+```razor
+<FilterBuilder TData="Employee"
+               @bind-Filters="filters"
+               AllowGroups="true"
+               FieldPickerVariant="FilterFieldPickerVariant.Combobox"
+               OnFilterChange="HandleFilterChange">
+    <FilterFields>
+        <FilterField Field="FirstName" Label="First Name" Icon="user"       Type="FilterFieldType.Text" />
+        <FilterField Field="Department" Label="Department" Icon="building-2" Type="FilterFieldType.Select" Options="@deptOptions" />
+        @* ... 20+ fields *@
+    </FilterFields>
+</FilterBuilder>
+```
+
+| Value | Description |
+|---|---|
+| `Dropdown` (default) | Hierarchical dropdown menu. Option-backed fields show a sub-menu with quick-select shortcuts. |
+| `Combobox` | Searchable combobox. Recommended for large field lists. Sub-menu quick-select is not available in this mode. |
+
+The `Combobox` variant propagates through nested `FilterGroupPanel` instances automatically — no per-group configuration needed.
+
+The demo site includes a **Searchable Field Picker** example in the Nested Groups demo page, showcasing 22+ employee fields with icons, mixed types, and group support.
+
+---
+
+
 
 > **Targeting: `v4.1.0`**  
 > **Affects `NeoUI.Blazor`.** Additive — no breaking changes.

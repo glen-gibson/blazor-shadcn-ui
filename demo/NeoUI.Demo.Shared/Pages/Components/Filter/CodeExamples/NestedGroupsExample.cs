@@ -49,6 +49,24 @@ partial class NestedGroupsExample
         </FilterBuilder>
         """;
 
+    private static readonly string _comboboxPickerCode = """
+        <FilterBuilder TData="Employee"
+                       @bind-Filters="employeeFilters"
+                       AllowGroups="true"
+                       FieldPickerVariant="FilterFieldPickerVariant.Combobox"
+                       OnFilterChange="HandleEmployeeFilterChange">
+            <FilterFields>
+                <FilterField Field="FirstName"  Label="First Name"  Icon="user"        Type="FilterFieldType.Text" />
+                <FilterField Field="Department" Label="Department"  Icon="building-2"  Type="FilterFieldType.Select" Options="@departmentOptions" />
+                <FilterField Field="Location"   Label="Location"    Icon="map-pin"     Type="FilterFieldType.Select" Options="@locationOptions" />
+                <FilterField Field="Status"     Label="Status"      Icon="activity"    Type="FilterFieldType.Select" Options="@statusOptions" />
+                <FilterField Field="Salary"     Label="Salary"      Icon="dollar-sign" Type="FilterFieldType.Number" EditorType="FilterEditorType.Currency" Min="0" />
+                <FilterField Field="StartDate"  Label="Start Date"  Icon="calendar"    Type="FilterFieldType.Date" />
+                @* ... 22 fields total — Combobox mode enables search for quick navigation *@
+            </FilterFields>
+        </FilterBuilder>
+        """;
+
     private static readonly string _linqCode = """
         // Apply the nested filter group to any IEnumerable<T> or IQueryable<T>
         var results = allOrders.ApplyFilters(filters).ToList();

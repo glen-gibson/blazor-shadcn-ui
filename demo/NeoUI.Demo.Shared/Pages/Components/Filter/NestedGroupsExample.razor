@@ -85,6 +85,73 @@
         </DemoBlock>
     </DemoSection>
 
+    <DemoSection Title="Searchable Field Picker" Description="When your field list grows beyond ~15 items, set FieldPickerVariant to Combobox for a searchable picker that replaces the dropdown menu. Sub-menu quick-select for option-backed fields is not available in this mode.">
+        <DemoBlock Code="@_comboboxPickerCode">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">Employees</h2>
+                    <span class="text-sm text-muted-foreground">@_filteredEmployees.Count of @_allEmployees.Count shown</span>
+                </div>
+
+                <FilterBuilder TData="Employee"
+                               @bind-Filters="_employeeFilters"
+                               AllowGroups="true"
+                               FieldPickerVariant="FilterFieldPickerVariant.Combobox"
+                               OnFilterChange="HandleEmployeeFilterChange">
+                    <FilterFields>
+                        <FilterField Field="FirstName"   Label="First Name"        Icon="user"           Type="FilterFieldType.Text" />
+                        <FilterField Field="LastName"    Label="Last Name"         Icon="user"           Type="FilterFieldType.Text" />
+                        <FilterField Field="Email"       Label="Email"             Icon="mail"           Type="FilterFieldType.Text" />
+                        <FilterField Field="Phone"       Label="Phone"             Icon="phone"          Type="FilterFieldType.Text" />
+                        <FilterField Field="Department"  Label="Department"        Icon="building-2"     Type="FilterFieldType.Select" Options="@_departmentOptions" />
+                        <FilterField Field="JobTitle"    Label="Job Title"         Icon="briefcase"      Type="FilterFieldType.Text" />
+                        <FilterField Field="Location"    Label="Location"          Icon="map-pin"        Type="FilterFieldType.Select" Options="@_locationOptions" />
+                        <FilterField Field="EmployeeType" Label="Employee Type"    Icon="users"          Type="FilterFieldType.Select" Options="@_employeeTypeOptions" />
+                        <FilterField Field="Status"      Label="Status"            Icon="activity"       Type="FilterFieldType.Select" Options="@_employeeStatusOptions" />
+                        <FilterField Field="StartDate"   Label="Start Date"        Icon="calendar"       Type="FilterFieldType.Date" />
+                        <FilterField Field="EndDate"     Label="End Date"          Icon="calendar-x"     Type="FilterFieldType.Date" />
+                        <FilterField Field="Salary"      Label="Salary"            Icon="dollar-sign"    Type="FilterFieldType.Number" EditorType="FilterEditorType.Currency" Min="0" />
+                        <FilterField Field="Bonus"       Label="Bonus"             Icon="gift"           Type="FilterFieldType.Number" EditorType="FilterEditorType.Currency" Min="0" />
+                        <FilterField Field="YearsExp"    Label="Years Experience"  Icon="award"          Type="FilterFieldType.Number" Min="0" />
+                        <FilterField Field="ManagerId"   Label="Manager"           Icon="user-check"     Type="FilterFieldType.Text" />
+                        <FilterField Field="TeamSize"    Label="Team Size"         Icon="users-round"    Type="FilterFieldType.Number" Min="0" />
+                        <FilterField Field="IsRemote"    Label="Remote"            Icon="wifi"           Type="FilterFieldType.Select" Options="@_boolOptions" />
+                        <FilterField Field="HasEquipment" Label="Has Equipment"    Icon="laptop"         Type="FilterFieldType.Select" Options="@_boolOptions" />
+                        <FilterField Field="Office"      Label="Office Floor"      Icon="building"       Type="FilterFieldType.Number" Min="1" />
+                        <FilterField Field="Notes"       Label="Notes"             Icon="notebook-pen"   Type="FilterFieldType.Text" />
+                        <FilterField Field="Tags"        Label="Tags"              Icon="tag"            Type="FilterFieldType.Text" />
+                        <FilterField Field="LastReview"  Label="Last Review Date"  Icon="clipboard-list" Type="FilterFieldType.Date" />
+                    </FilterFields>
+                </FilterBuilder>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach (var emp in _filteredEmployees)
+                    {
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>@emp.FirstName @emp.LastName</CardTitle>
+                                <CardDescription>@emp.JobTitle · @emp.Department</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-muted-foreground">@emp.Location</span>
+                                    <Badge Variant="@GetEmployeeStatusVariant(emp.Status)">@emp.Status</Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    }
+                </div>
+
+                @if (!_filteredEmployees.Any())
+                {
+                    <div class="text-center py-12">
+                        <p class="text-muted-foreground">No employees match your filters.</p>
+                    </div>
+                }
+            </div>
+        </DemoBlock>
+    </DemoSection>
+
     <DemoSection Title="LINQ Support" Description="The ApplyFilters extension fully resolves nested groups at runtime.">
         <div class="bg-muted p-6 rounded-lg">
             <pre class="text-sm overflow-x-auto font-mono"><code>@_linqCode</code></pre>
@@ -97,9 +164,12 @@
 @code {
     private FilterGroup _activeFilters = new();
     private FilterGroup _presetFilters = BuildPresetFilters();
+    private FilterGroup _employeeFilters = new();
     private List<Order> _allOrders = new();
     private List<Order> _filteredOrders = new();
     private List<Order> _presetFiltered = new();
+    private List<Employee> _allEmployees = new();
+    private List<Employee> _filteredEmployees = new();
 
     private readonly List<SelectOption> _statusOptions =
     [
@@ -115,6 +185,48 @@
         new("Low",    "Low"),
         new("Medium", "Medium"),
         new("High",   "High"),
+    ];
+
+    private readonly List<SelectOption> _departmentOptions =
+    [
+        new("Engineering",  "Engineering"),
+        new("Product",      "Product"),
+        new("Design",       "Design"),
+        new("Marketing",    "Marketing"),
+        new("Sales",        "Sales"),
+        new("HR",           "HR"),
+        new("Finance",      "Finance"),
+        new("Legal",        "Legal"),
+    ];
+
+    private readonly List<SelectOption> _locationOptions =
+    [
+        new("New York",     "New York"),
+        new("San Francisco","San Francisco"),
+        new("London",       "London"),
+        new("Berlin",       "Berlin"),
+        new("Remote",       "Remote"),
+    ];
+
+    private readonly List<SelectOption> _employeeTypeOptions =
+    [
+        new("Full-time",    "Full-time"),
+        new("Part-time",    "Part-time"),
+        new("Contractor",   "Contractor"),
+        new("Intern",       "Intern"),
+    ];
+
+    private readonly List<SelectOption> _employeeStatusOptions =
+    [
+        new("Active",       "Active"),
+        new("On Leave",     "On Leave"),
+        new("Terminated",   "Terminated"),
+    ];
+
+    private readonly List<SelectOption> _boolOptions =
+    [
+        new("Yes", "Yes"),
+        new("No",  "No"),
     ];
 
     protected override void OnInitialized()
@@ -134,6 +246,21 @@
         ];
         _filteredOrders  = _allOrders.ToList();
         _presetFiltered  = _allOrders.ApplyFilters(_presetFilters).ToList();
+
+        _allEmployees =
+        [
+            new() { FirstName = "Alice",    LastName = "Johnson",   JobTitle = "Senior Engineer",    Department = "Engineering",  Location = "New York",      Status = "Active",      StartDate = new DateTime(2019, 3, 15) },
+            new() { FirstName = "Bob",      LastName = "Smith",     JobTitle = "Product Manager",    Department = "Product",      Location = "San Francisco", Status = "Active",      StartDate = new DateTime(2020, 7, 1)  },
+            new() { FirstName = "Carol",    LastName = "White",     JobTitle = "UX Designer",        Department = "Design",       Location = "London",        Status = "Active",      StartDate = new DateTime(2021, 1, 10) },
+            new() { FirstName = "David",    LastName = "Brown",     JobTitle = "Marketing Lead",     Department = "Marketing",    Location = "Remote",        Status = "On Leave",    StartDate = new DateTime(2018, 5, 20) },
+            new() { FirstName = "Eve",      LastName = "Davis",     JobTitle = "Sales Director",     Department = "Sales",        Location = "New York",      Status = "Active",      StartDate = new DateTime(2017, 11, 8) },
+            new() { FirstName = "Frank",    LastName = "Miller",    JobTitle = "HR Specialist",      Department = "HR",           Location = "Berlin",        Status = "Active",      StartDate = new DateTime(2022, 4, 3)  },
+            new() { FirstName = "Grace",    LastName = "Lee",       JobTitle = "Staff Engineer",     Department = "Engineering",  Location = "San Francisco", Status = "Active",      StartDate = new DateTime(2016, 9, 12) },
+            new() { FirstName = "Henry",    LastName = "Wilson",    JobTitle = "Finance Analyst",    Department = "Finance",      Location = "London",        Status = "Active",      StartDate = new DateTime(2023, 2, 14) },
+            new() { FirstName = "Iris",     LastName = "Martinez",  JobTitle = "Legal Counsel",      Department = "Legal",        Location = "New York",      Status = "Active",      StartDate = new DateTime(2020, 6, 22) },
+            new() { FirstName = "Jack",     LastName = "Anderson",  JobTitle = "Engineering Manager",Department = "Engineering",  Location = "Remote",        Status = "Terminated",  StartDate = new DateTime(2015, 8, 30) },
+        ];
+        _filteredEmployees = _allEmployees.ToList();
     }
 
     private void HandleFilterChange(FilterGroup filters)
@@ -144,6 +271,11 @@
     private void HandlePresetFilterChange(FilterGroup filters)
     {
         _presetFiltered = _allOrders.ApplyFilters(filters).ToList();
+    }
+
+    private void HandleEmployeeFilterChange(FilterGroup filters)
+    {
+        _filteredEmployees = _allEmployees.ApplyFilters(filters).ToList();
     }
 
     // (Status = "Pending" OR Status = "Processing") AND Amount > 500
@@ -166,6 +298,14 @@
                 ]
             }
         ]
+    };
+
+    private static BadgeVariant GetEmployeeStatusVariant(string status) => status switch
+    {
+        "Active"     => BadgeVariant.Default,
+        "On Leave"   => BadgeVariant.Secondary,
+        "Terminated" => BadgeVariant.Destructive,
+        _            => BadgeVariant.Outline,
     };
 
     private static BadgeVariant GetStatusVariant(string status) => status switch
@@ -192,5 +332,31 @@
         public string Status { get; set; } = string.Empty;
         public string Priority { get; set; } = string.Empty;
         public decimal Amount { get; set; }
+    }
+
+    public class Employee
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public string JobTitle { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string EmployeeType { get; set; } = "Full-time";
+        public string Status { get; set; } = string.Empty;
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public decimal Salary { get; set; }
+        public decimal Bonus { get; set; }
+        public int YearsExp { get; set; }
+        public string ManagerId { get; set; } = string.Empty;
+        public int TeamSize { get; set; }
+        public string IsRemote { get; set; } = "No";
+        public string HasEquipment { get; set; } = "Yes";
+        public int Office { get; set; }
+        public string Notes { get; set; } = string.Empty;
+        public string Tags { get; set; } = string.Empty;
+        public DateTime? LastReview { get; set; }
     }
 }
