@@ -945,6 +945,13 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
             _tableState.Pagination.CurrentPage = 1;
         }
 
+        // When the ServerData delegate reference changes (i.e. the caller swapped in a new
+        // lambda because its filter parameters changed), reset to page 1 so the user always
+        // sees the first page of the freshly-filtered result set. Sort state is intentionally
+        // preserved so column sort direction survives a filter change.
+        if (!ReferenceEquals(ServerData, _lastServerData) && _lastServerData is not null)
+            _tableState.Pagination.CurrentPage = 1;
+
         // Keep selection mode in sync with parameter
         _tableState.Selection.Mode = GetPrimitiveSelectionMode();
 
