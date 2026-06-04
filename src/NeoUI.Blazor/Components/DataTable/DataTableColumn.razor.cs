@@ -33,6 +33,8 @@ namespace NeoUI.Blazor;
 /// </example>
 public partial class DataTableColumn<TData, TValue> : ComponentBase where TData : class where TValue : notnull
 {
+    // Stable per-instance key for columns with no explicit Id and empty Header.
+    internal readonly string InstanceId = Guid.NewGuid().ToString("N")[..8];
     /// <summary>
     /// Gets or sets the unique identifier for this column.
     /// If not provided, it will be auto-generated from the Header.
@@ -169,7 +171,7 @@ public partial class DataTableColumn<TData, TValue> : ComponentBase where TData 
     /// <summary>
     /// Gets the effective column ID (uses Id if provided, otherwise generates from Header).
     /// </summary>
-    internal string EffectiveId => Id ?? Header.ToLowerInvariant().Replace(" ", "-");
+    internal string EffectiveId => Id ?? (string.IsNullOrEmpty(Header) ? InstanceId : Header.ToLowerInvariant().Replace(" ", "-"));
 
     /// <summary>
     /// Initializes the data table column and registers it with the parent table.

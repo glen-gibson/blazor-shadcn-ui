@@ -983,7 +983,7 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
         // Create internal column data structure (avoids BL0005 component parameter warnings)
         var columnData = new ColumnData
         {
-            Id = column.Id ?? column.Header.ToLowerInvariant().Replace(" ", "-"),
+            Id = column.Id ?? (string.IsNullOrEmpty(column.Header) ? column.InstanceId : column.Header.ToLowerInvariant().Replace(" ", "-")),
             Header = column.Header,
             Property = item =>
             {
