@@ -93,9 +93,20 @@ function isAncestorOpen(el, container) {
 
 /**
  * Resolves the active element and repositions the indicator, or hides it.
+ *
+ * When hover/focus tracking is enabled, a keyboard-highlighted item takes precedence over the
+ * selected item. This covers the aria-activedescendant pattern (e.g. Select): arrow keys flip
+ * data-focused="true" on the option without moving real DOM focus, so focusin never fires —
+ * tracking data-focused here lets the indicator follow keyboard navigation. It snaps back to the
+ * selector (the selected/checked item) when nothing is keyboard-highlighted.
  */
-function positionIndicator(indicator, container, selector, instant, transition, fixedHeight) {
-    const activeEl = container.querySelector(selector);
+function positionIndicator(indicator, container, selector, instant, transition, fixedHeight, hoverEnabled) {
+    let activeEl = null;
+    if (hoverEnabled && !('siHover' in indicator.dataset)) {
+        const focused = container.querySelector('[data-focused="true"]');
+        if (focused && isAncestorOpen(focused, container)) activeEl = focused;
+    }
+    if (!activeEl) activeEl = container.querySelector(selector);
     if (!activeEl || !isAncestorOpen(activeEl, container)) {
         indicator.style.opacity = '0';
         return;
@@ -140,7 +151,7 @@ export function init(indicator, selector, hoverEnabled, hoverTarget) {
     ].join(', ');
 
     // Snap to correct position immediately (no animation on first render)
-    positionIndicator(indicator, container, selector, true, transition, fixedHeight);
+    positionIndicator(indicator, container, selector, true, transition, fixedHeight, hoverEnabled);
 
     // If there was no initial active element, applyPosition(instant: true) was never called,
     // so indicator.style.transition was never initialized. Ensure it's set now so that
@@ -151,11 +162,11 @@ export function init(indicator, selector, hoverEnabled, hoverTarget) {
 
     // Watch for attribute changes that signal a new active item
     const observer = new MutationObserver(() =>
-        positionIndicator(indicator, container, selector, false, transition, fixedHeight));
+        positionIndicator(indicator, container, selector, false, transition, fixedHeight, hoverEnabled));
 
     observer.observe(container, {
         subtree: true,
-        attributeFilter: ['data-state', 'aria-selected', 'aria-checked', 'aria-current', 'data-active'],
+        attributeFilter: ['data-state', 'aria-selected', 'aria-checked', 'aria-current', 'data-active', 'data-focused'],
     });
 
     // ── Hover tracking ──────────────────────────────────────────────────────
@@ -182,7 +193,7 @@ export function init(indicator, selector, hoverEnabled, hoverTarget) {
 
         const snapBack = () => {
             delete indicator.dataset.siHover;
-            positionIndicator(indicator, container, selector, false, transition, fixedHeight);
+            positionIndicator(indicator, container, selector, false, transition, fixedHeight, hoverEnabled);
         };
 
         const onMouseLeave = snapBack;
@@ -230,7 +241,7 @@ export function init(indicator, selector, hoverEnabled, hoverTarget) {
         if (e.target === indicator) return;           // ignore the indicator's own transitions
         if (!layoutProps.has(e.propertyName)) return; // ignore colour / opacity / etc.
         if ('siHover' in indicator.dataset) return;   // don't disturb an active hover highlight
-        positionIndicator(indicator, container, selector, false, transition, fixedHeight);
+        positionIndicator(indicator, container, selector, false, transition, fixedHeight, hoverEnabled);
     };
     container.addEventListener('transitionend', onLayoutTransitionEnd);
     container.addEventListener('transitioncancel', onLayoutTransitionEnd);
@@ -247,7 +258,7 @@ export function init(indicator, selector, hoverEnabled, hoverTarget) {
             resizeRafId = null;
             if (!container.isConnected || !indicator.isConnected) return;
             if ('siHover' in indicator.dataset) return;
-            positionIndicator(indicator, container, selector, false, transition, fixedHeight);
+            positionIndicator(indicator, container, selector, false, transition, fixedHeight, hoverEnabled);
         });
     });
     resizeObserver.observe(container);
