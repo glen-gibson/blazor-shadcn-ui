@@ -8,6 +8,27 @@
         Title="Selection Indicator"
         Description="A composable, spring-animated indicator that slides between the active item in any selection container — Tabs, ToggleGroup, navigation links, or your own custom markup." />
 
+    @* ── Select (keyboard + hover) ─────────────────────────────────────────── *@
+    <DemoSection
+        Title="Select"
+        Description="Drop SelectionIndicator into SelectContent. A Select highlights the active option via data-focused (aria-activedescendant) for keyboard nav rather than real DOM focus, so the indicator tracks data-focused there while still following the mouse. Clear each SelectItem's own selected/focus background so the pill shows through. Open it and test: arrow keys move the pill, mouse hover slides it (crossing the gap between items keeps it in place), and leaving the dropdown snaps it back to the selected item.">
+        <DemoBlock>
+            <Select @bind-Value="_selectValue" TValue="string" Class="w-[280px]">
+                <SelectTrigger>
+                    <SelectValue Placeholder="Select a fruit" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem Value="@("apple")" Text="Apple" TValue="string" Class="relative z-10 bg-transparent data-[focused=true]:bg-transparent">Apple</SelectItem>
+                    <SelectItem Value="@("banana")" Text="Banana" TValue="string" Class="relative z-10 bg-transparent data-[focused=true]:bg-transparent">Banana</SelectItem>
+                    <SelectItem Value="@("blueberry")" Text="Blueberry" TValue="string" Class="relative z-10 bg-transparent data-[focused=true]:bg-transparent">Blueberry</SelectItem>
+                    <SelectItem Value="@("grapes")" Text="Grapes" TValue="string" Class="relative z-10 bg-transparent data-[focused=true]:bg-transparent">Grapes</SelectItem>
+                    <SelectItem Value="@("pineapple")" Text="Pineapple" TValue="string" Class="relative z-10 bg-transparent data-[focused=true]:bg-transparent">Pineapple</SelectItem>
+                    <SelectionIndicator Selector="[data-state=checked]" Hover="true" HoverTarget="[role=option]" Class="inset-x-1 bg-accent shadow-none" />
+                </SelectContent>
+            </Select>
+        </DemoBlock>
+    </DemoSection>
+
     @* ── Tabs ──────────────────────────────────────────────────────────────── *@
     <DemoSection
         Title="Tabs"
@@ -90,7 +111,7 @@
                         <DropdownMenuRadioItem TValue="string" Value="@("Columns")" CloseOnSelect="false" Class="relative z-1 hover:bg-transparent focus:bg-transparent">Columns</DropdownMenuRadioItem>
                         <SelectionIndicator Selector="[data-state=checked]"
                                             Hover="true"
-                                            Class="inset-x-1 bg-accent data-[si-hover]:bg-accent/50 rounded-sm shadow-none" />
+                                            Class="inset-x-1 bg-accent data-[si-hover]:bg-accent/50 shadow-none" />
                     </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -127,7 +148,7 @@
                     <SelectionIndicator
                         Hover="true"
                         HoverTarget="[role=menuitem]"
-                        Class="inset-x-1 bg-accent rounded-sm shadow-none" />
+                        Class="inset-x-1 bg-accent shadow-none" />
                 </DropdownMenuContent>
             </DropdownMenu>
         </DemoBlock>
@@ -211,6 +232,7 @@
 </div>
 
 @code {
+    private string  _selectValue = "apple";
     private string? _alignment = "center";
     private string  _activeNav  = "Overview";
     private string  _period     = "1M";

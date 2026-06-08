@@ -95,8 +95,18 @@
     {
         _disposed = true;
         if (_module is null) return;
-        try { await _module.InvokeVoidAsync("dispose", _ref); } catch { }
-        await _module.DisposeAsync();
+
+        // Best-effort teardown: unwire the JS-side observers/listeners, then release the module
+        // reference. On circuit loss (navigation, dropped connection) the browser-side state dies
+        // with the circuit and these interop calls throw JSDisconnectedException — there is nothing
+        // left to release, so swallow it. Disposal must never throw.
+        try
+        {
+            await _module.InvokeVoidAsync("dispose", _ref);
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+        catch (OperationCanceledException) { }
     }
 
     [Inject]

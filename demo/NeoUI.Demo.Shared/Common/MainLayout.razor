@@ -260,11 +260,16 @@
     <ToastViewport Position="ToastPosition.BottomRight" />
     <SpotlightCommandPalette @ref="_spotlightRef" />
     <DialogHost />
-</AppProvider>
 
-@* Use separate portal hosts for better performance (prevents render cascades) *@
-<ContainerPortalHost />
-<OverlayPortalHost />
+    @* Portal hosts live INSIDE AppProvider so portaled overlay content (Select/Dropdown
+       dropdowns, etc.) is rendered under the StyleVariant cascade and re-renders with it on
+       theme change. Outside AppProvider, portaled content was severed from the cascade —
+       components reading StyleVariant only via [CascadingParameter] (e.g. SelectionIndicator)
+       fell back to Default. Kept as the last children, outside SidebarProvider, to preserve the
+       original intent of isolating them from the heavy sidebar subtree. *@
+    <ContainerPortalHost />
+    <OverlayPortalHost />
+</AppProvider>
 
 @* Styled Blazor error UI *@
 <ErrorToast />
