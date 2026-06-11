@@ -46,6 +46,9 @@
 @code {
     private bool _isOpen = false;
     private DialogOptions? _options;
+    // Set by whichever button handler runs first; OnOpenChanged reads it.
+    // Null means the dialog was dismissed externally (ESC / backdrop) → Cancelled.
+    private DialogResult? _pendingResult;
 
     protected override void OnInitialized()
     {
@@ -55,6 +58,7 @@
     internal void Show(DialogOptions options)
     {
         _options = options;
+        _pendingResult = null;
         _isOpen = true;
         StateHasChanged();
     }
@@ -63,29 +67,18 @@
     {
         if (!isOpen && _isOpen)
         {
-            // Dialog was closed externally (e.g., ESC key)
             _isOpen = false;
-            DialogService.NotifyResult(DialogResult.Cancelled);
+            var result = _pendingResult ?? DialogResult.Cancelled;
+            _pendingResult = null;
+            DialogService.NotifyResult(result);
         }
     }
 
-    private void HandleConfirm()
-    {
-        _isOpen = false;
-        DialogService.NotifyResult(DialogResult.Confirmed);
-    }
-
-    private void HandleCancel()
-    {
-        _isOpen = false;
-        DialogService.NotifyResult(DialogResult.Cancelled);
-    }
-
-    private void HandleAlternate()
-    {
-        _isOpen = false;
-        DialogService.NotifyResult(DialogResult.Alternate);
-    }
+    // Button handlers only record the intended result.
+    // OnOpenChanged (fired by TriggerContext.Close after the ordering fix in Button) calls NotifyResult.
+    private void HandleConfirm()   => _pendingResult = DialogResult.Confirmed;
+    private void HandleCancel()    => _pendingResult = DialogResult.Cancelled;
+    private void HandleAlternate() => _pendingResult = DialogResult.Alternate;
 
     private string GetIconContainerClass()
     {

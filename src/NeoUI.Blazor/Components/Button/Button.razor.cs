@@ -241,6 +241,14 @@ public partial class Button : ComponentBase
     {
         if (Disabled) return;
 
+        // OnClick must fire BEFORE TriggerContext.Close/Toggle so that handlers like
+        // DialogService.NotifyResult (on confirm/cancel buttons) run before the close-event
+        // chain fires OnOpenChanged — which would otherwise clobber the result with Cancelled.
+        if (OnClick.HasDelegate)
+        {
+            await OnClick.InvokeAsync(args);
+        }
+
         // Handle trigger context behavior (from AsChild pattern)
         if (TriggerContext != null)
         {
@@ -254,12 +262,6 @@ public partial class Button : ComponentBase
             {
                 TriggerContext.Toggle.Invoke();
             }
-        }
-
-        // Invoke the OnClick callback
-        if (OnClick.HasDelegate)
-        {
-            await OnClick.InvokeAsync(args);
         }
     }
 
