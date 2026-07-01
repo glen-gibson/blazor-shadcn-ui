@@ -22,8 +22,5 @@
        aria-label="@AriaLabel"
        aria-describedby="@AriaDescribedBy"
        aria-invalid="@(EffectiveAriaInvalid?.ToString().ToLower())"
-       @attributes="AdditionalAttributes" />
-
-
-
-
+       @attributes="AdditionalAttributes"
+       @ref="_elementReference" />

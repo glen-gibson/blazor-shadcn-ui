@@ -56,22 +56,28 @@ public partial class Input : ComponentBase, IAsyncDisposable
         LoggerMessage.Define<string>(LogLevel.Error, new EventId(1, nameof(LogJsInitializationFailed)),
             "Error initializing input JS: {Message}");
     private IJSObjectReference? _inputModule;
-    
+
     /// <summary>
     /// DotNet object reference for JavaScript callbacks.
     /// </summary>
     private DotNetObjectReference<Input>? _dotNetRef;
-    
+
     /// <summary>
     /// Tracks whether JavaScript module has been initialized.
     /// </summary>
     private bool _jsInitialized = false;
-    
+
     /// <summary>
     /// Auto-generated ID when user doesn't provide one.
     /// </summary>
     private string? _generatedId;
-    
+
+    /// <summary>
+    /// Reference to the underlying input HTML element.
+    /// Used to perform DOM operations such as focusing.
+    /// </summary>
+    private ElementReference _elementReference;
+
     /// <summary>
     /// Validation behavior handler for EditContext integration.
     /// </summary>
@@ -294,7 +300,6 @@ public partial class Input : ComponentBase, IAsyncDisposable
     [Parameter]
     public bool? Spellcheck { get; set; }
 
-
     /// <summary>
     /// Gets or sets additional CSS classes to apply to the input.
     /// </summary>
@@ -486,7 +491,7 @@ public partial class Input : ComponentBase, IAsyncDisposable
     /// When ShowValidationError is true, this is automatically set based on validation state.
     /// Otherwise, uses the manually set AriaInvalid parameter.
     /// </summary>
-    private bool? EffectiveAriaInvalid => 
+    private bool? EffectiveAriaInvalid =>
         _validationBehavior?.EffectiveAriaInvalid ?? AriaInvalid;
 
     /// <summary>
@@ -495,7 +500,7 @@ public partial class Input : ComponentBase, IAsyncDisposable
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        
+
         if (ShowValidationError)
         {
             _validationBehavior = new InputValidationBehavior(
@@ -514,11 +519,11 @@ public partial class Input : ComponentBase, IAsyncDisposable
     protected override void OnParametersSet()
     {
         base.OnParametersSet();
-        
+
         if (_validationBehavior != null)
         {
             _validationBehavior.OnParametersSet(ValueExpression);
-            
+
             // Subscribe to EditContext validation state changes
             if (EditContext != null)
             {
@@ -534,7 +539,7 @@ public partial class Input : ComponentBase, IAsyncDisposable
     private void OnValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
     {
         if (_validationBehavior == null) return;
-        
+
         InvokeAsync(async () =>
         {
             var shouldRender = await _validationBehavior.HandleValidationStateChangedAsync();
@@ -627,7 +632,7 @@ public partial class Input : ComponentBase, IAsyncDisposable
             {
                 EditContext.OnValidationStateChanged -= OnValidationStateChanged;
             }
-            
+
             if (_validationBehavior != null)
             {
                 await _validationBehavior.DisposeAsync();
@@ -638,7 +643,7 @@ public partial class Input : ComponentBase, IAsyncDisposable
                 // Dispose input event handling and validation tracking
                 await _inputModule.InvokeVoidAsync("disposeInput", EffectiveId);
                 await _inputModule.InvokeVoidAsync("disposeValidation", EffectiveId);
-                
+
                 await _inputModule.DisposeAsync();
             }
 
@@ -652,5 +657,13 @@ public partial class Input : ComponentBase, IAsyncDisposable
         {
             // Ignore disposal errors
         }
+    }
+
+    /// <summary>
+    /// Sets focus to the input element.
+    /// </summary>
+    public async ValueTask FocusAsync()
+    {
+        await _elementReference.FocusAsync();
     }
 }
