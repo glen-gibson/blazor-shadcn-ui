@@ -16,6 +16,7 @@ namespace NeoUI.Demo.Shared.Pages.Components
                 new("AriaDescribedBy",    "string?",     "null",   "ID of element that describes this input."),
                 new("AriaInvalid",        "bool",        "false",  "Marks the input as invalid for screen readers."),
                 new("Class",              "string?",     "null",   "Additional CSS classes appended to the input element."),
+                new("FocusAsync",         "ValueTask",   "-",      "Moves keyboard focus to the input element."),
             ];
 
         private const string _defaultCode = """
@@ -75,6 +76,30 @@ namespace NeoUI.Demo.Shared.Pages.Components
 
                 @code {
                     private string? name;
+                }
+                """;
+
+        private const string _focusCode = """
+                <div class="space-y-4 max-w-sm">
+                    <div class="space-y-2">
+                        <Label>Name</Label>
+                        <Input Type="InputType.Text" Placeholder="Type your name" @ref="inputReference" />
+                    </div>
+                    <div class="space-y-2">
+                        <Label>Email</Label>
+                        <Input Type="InputType.Email" Placeholder="Type your e-mail" />
+                    </div>
+                    <Button OnClick="OnClick">Focus</Button>
+                </div>
+
+                @code {
+                    private Input? inputReference;
+
+                    private async Task OnClick()
+                    {
+                        if (inputReference is null) return;
+                        await inputReference.FocusAsync();
+                    }
                 }
                 """;
 

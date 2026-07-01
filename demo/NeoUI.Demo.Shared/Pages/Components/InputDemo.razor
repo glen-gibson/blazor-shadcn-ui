@@ -5,13 +5,11 @@
 
 <div class="space-y-8 max-w-4xl">
 
-    <DemoPageHeader
-        Title="Input"
-        Description="Displays a form input field or a component that looks like an input field." />
+    <DemoPageHeader Title="Input"
+                    Description="Displays a form input field or a component that looks like an input field." />
 
-    <DemoSection
-        Title="Default"
-        Description="A simple text input.">
+    <DemoSection Title="Default"
+                 Description="A simple text input.">
         <DemoBlock Code="@_defaultCode">
             <div class="w-full max-w-sm">
                 <Input Type="InputType.Text" Placeholder="Email" />
@@ -19,22 +17,21 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="UpdateOn Behavior"
-        Description="Control when the bound value is updated — on each keystroke (Input) or when the field loses focus (Change).">
+    <DemoSection Title="UpdateOn Behavior"
+                 Description="Control when the bound value is updated — on each keystroke (Input) or when the field loses focus (Change).">
         <DemoBlock Code="@_updateOnCode">
             <ChildContent>
                 <div class="space-y-4 max-w-sm">
                     <div class="space-y-2">
                         <Label>UpdateOn Input (default)</Label>
                         <Input Type="InputType.Text" Placeholder="Type here..."
-                            @bind-Value="updateOnInputValue" UpdateOn="InputUpdateMode.Input" />
+                               @bind-Value="updateOnInputValue" UpdateOn="InputUpdateMode.Input" />
                         <p class="text-sm text-muted-foreground">Value: <strong>@updateOnInputValue</strong></p>
                     </div>
                     <div class="space-y-2">
                         <Label>UpdateOn Change (on blur)</Label>
                         <Input Type="InputType.Text" Placeholder="Type then click away..."
-                            @bind-Value="updateOnChangeValue" UpdateOn="InputUpdateMode.Change" />
+                               @bind-Value="updateOnChangeValue" UpdateOn="InputUpdateMode.Change" />
                         <p class="text-sm text-muted-foreground">Value: <strong>@updateOnChangeValue</strong></p>
                     </div>
                 </div>
@@ -91,9 +88,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Input Types"
-        Description="Various HTML input types for different data scenarios.">
+    <DemoSection Title="Input Types"
+                 Description="Various HTML input types for different data scenarios.">
         <DemoBlock Code="@_typesCode">
             <div class="grid grid-cols-1 gap-4 max-w-sm">
                 <div class="space-y-2">
@@ -136,9 +132,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="File"
-        Description="File inputs allow users to select one or multiple files.">
+    <DemoSection Title="File"
+                 Description="File inputs allow users to select one or multiple files.">
         <DemoBlock Code="@_fileCode">
             <div class="space-y-4 max-w-sm">
                 <div class="space-y-2">
@@ -153,9 +148,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Disabled"
-        Description="Disabled inputs cannot be interacted with.">
+    <DemoSection Title="Disabled"
+                 Description="Disabled inputs cannot be interacted with.">
         <DemoBlock Code="@_disabledCode">
             <div class="w-full max-w-sm">
                 <Input Type="InputType.Text" Placeholder="Disabled input" Disabled="true" />
@@ -163,9 +157,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Required"
-        Description="Mark inputs as required for form validation.">
+    <DemoSection Title="Required"
+                 Description="Mark inputs as required for form validation.">
         <DemoBlock Code="@_requiredCode">
             <div class="space-y-4 max-w-sm">
                 <div class="space-y-2">
@@ -176,9 +169,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="With Label"
-        Description="Pair inputs with descriptive labels.">
+    <DemoSection Title="With Label"
+                 Description="Pair inputs with descriptive labels.">
         <DemoBlock Code="@_withLabelCode">
             <div class="grid w-full max-w-sm items-center gap-1.5">
                 <Label For="email">Email</Label>
@@ -187,32 +179,30 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Accessibility (ARIA)"
-        Description="Enhance accessibility with ARIA attributes.">
+    <DemoSection Title="Accessibility (ARIA)"
+                 Description="Enhance accessibility with ARIA attributes.">
         <DemoBlock Code="@_ariaCode">
             <div class="space-y-4 max-w-sm">
                 <div class="space-y-2">
                     <Label>Search</Label>
                     <Input Type="InputType.Search" Placeholder="Search..."
-                        AriaLabel="Search the website"
-                        AriaDescribedBy="search-hint" />
+                           AriaLabel="Search the website"
+                           AriaDescribedBy="search-hint" />
                     <p id="search-hint" class="text-sm text-muted-foreground">Type keywords to search the documentation.</p>
                 </div>
                 <div class="space-y-2">
                     <Label>Invalid field</Label>
                     <Input Type="InputType.Text" Value="bad@email"
-                        AriaInvalid="true"
-                        AriaDescribedBy="email-error" />
+                           AriaInvalid="true"
+                           AriaDescribedBy="email-error" />
                     <p id="email-error" class="text-sm text-destructive">Please enter a valid email address.</p>
                 </div>
             </div>
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Two-Way Binding"
-        Description="Two-way data binding: bind to a C# property with the bind-Value syntax.">
+    <DemoSection Title="Two-Way Binding"
+                 Description="Two-way data binding: bind to a C# property with the bind-Value syntax.">
         <DemoBlock Code="@_bindingCode">
             <div class="space-y-4 max-w-sm">
                 <div class="space-y-2">
@@ -224,9 +214,25 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Custom Styling"
-        Description="Apply custom CSS classes to customize the appearance.">
+    <DemoSection Title="Input Focus"
+                 Description="Moves keyboard focus to the input element.">
+        <DemoBlock Code="@_focusCode">
+            <div class="space-y-4 max-w-sm">
+                <div class="space-y-2">
+                    <Label>Name</Label>
+                    <Input Type="InputType.Text" Placeholder="Type your name" @ref="inputReference" />
+                </div>
+                <div class="space-y-2">
+                    <Label>Email</Label>
+                    <Input Type="InputType.Email" Placeholder="Type your e-mail" />
+                </div>
+                <Button OnClick="OnClick">Focus</Button>
+            </div>
+        </DemoBlock>
+    </DemoSection>
+
+    <DemoSection Title="Custom Styling"
+                 Description="Apply custom CSS classes to customize the appearance.">
         <DemoBlock Code="@_customStylingCode">
             <div class="space-y-4 max-w-sm">
                 <Input Type="InputType.Text" Placeholder="Rounded full" Class="rounded-full px-4" />
@@ -236,9 +242,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Validation with EditContext"
-        Description="Automatic validation error display using EditContext and Data Annotations. Shows native browser tooltips, error styling, and inline messages.">
+    <DemoSection Title="Validation with EditContext"
+                 Description="Automatic validation error display using EditContext and Data Annotations. Shows native browser tooltips, error styling, and inline messages.">
         <DemoBlock Code="@_validationCode">
             <div class="max-w-md">
                 <EditForm Model="@validationModel" OnValidSubmit="HandleValidSubmit">
@@ -249,10 +254,10 @@
                             <FieldLabel For="val-username">Username</FieldLabel>
                             <FieldContent>
                                 <NeoUI.Blazor.Input Id="val-username"
-                                       Type="InputType.Text"
-                                       @bind-Value="validationModel.Username"
-                                       ShowValidationError="true"
-                                       Placeholder="Enter username" />
+                                                    Type="InputType.Text"
+                                                    @bind-Value="validationModel.Username"
+                                                    ShowValidationError="true"
+                                                    Placeholder="Enter username" />
                                 <FieldDescription>At least 3 characters, letters, numbers, and underscores only</FieldDescription>
                                 <ValidationMessage For="@(() => validationModel.Username)" class="text-destructive text-sm" />
                             </FieldContent>
@@ -262,10 +267,10 @@
                             <FieldLabel For="val-email">Email</FieldLabel>
                             <FieldContent>
                                 <NeoUI.Blazor.Input Id="val-email"
-                                       Type="InputType.Email"
-                                       @bind-Value="validationModel.Email"
-                                       ShowValidationError="true"
-                                       Placeholder="your@email.com" />
+                                                    Type="InputType.Email"
+                                                    @bind-Value="validationModel.Email"
+                                                    ShowValidationError="true"
+                                                    Placeholder="your@email.com" />
                                 <ValidationMessage For="@(() => validationModel.Email)" class="text-destructive text-sm" />
                             </FieldContent>
                         </Field>
@@ -274,9 +279,9 @@
                             <FieldLabel For="val-age">Age</FieldLabel>
                             <FieldContent>
                                 <NeoUI.Blazor.Input Id="val-age"
-                                       Type="InputType.Number"
-                                       @bind-Value="validationModel.Age"
-                                       ShowValidationError="true" />
+                                                    Type="InputType.Number"
+                                                    @bind-Value="validationModel.Age"
+                                                    ShowValidationError="true" />
                                 <FieldDescription>Must be between 18 and 120</FieldDescription>
                                 <ValidationMessage For="@(() => validationModel.Age)" class="text-destructive text-sm" />
                             </FieldContent>
@@ -300,7 +305,8 @@
                     <h3 class="font-semibold mb-2">What happens when you submit with errors:</h3>
                     <ol class="list-decimal list-inside space-y-1 text-muted-foreground">
                         <li><strong>All invalid fields</strong> get red border/ring styling and inline error messages</li>
-                        <li><strong>First invalid field</strong> (Username) also gets:
+                        <li>
+                            <strong>First invalid field</strong> (Username) also gets:
                             <ul class="list-disc list-inside ml-6 mt-1">
                                 <li>Native browser tooltip with error message</li>
                                 <li>Auto-focus (cursor ready to type)</li>
@@ -327,6 +333,13 @@
     private string? updateOnInputValue;
     private string? updateOnChangeValue;
     private bool submitSuccess = false;
+    private Input? inputReference;
+
+    private async Task OnClick()
+    {
+        if (inputReference is null) return;
+        await inputReference.FocusAsync();
+    }
 
     private InputValidationModel validationModel = new();
 
