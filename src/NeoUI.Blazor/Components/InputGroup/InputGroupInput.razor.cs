@@ -183,4 +183,9 @@ public partial class InputGroupInput : ComponentBase
             OnInputRef.Invoke(_inputRef);
         }
     }
+
+    /// <summary>
+    /// Moves keyboard focus to the input element.
+    /// </summary>
+    public ValueTask FocusAsync() => _inputRef.FocusAsync();
 }
