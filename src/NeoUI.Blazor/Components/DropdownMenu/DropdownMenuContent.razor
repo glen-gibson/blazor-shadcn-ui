@@ -13,6 +13,7 @@
                                                             Loop="@Loop"
                                                             Strategy="@Strategy"
                                                             MatchTriggerWidth="@MatchTriggerWidth"
+                                                            ParentPortalId="@ParentPortalId"
                                                             ZIndex="@ZIndex">
     <div class="@InnerCssClass">
         <CascadingValue Name="StyleVariant" Value="_styleVariant" IsFixed="false">
@@ -120,6 +121,15 @@
     /// </summary>
     [Parameter]
     public string? Style { get; set; }
+
+    /// <summary>
+    /// Optional parent portal id. Set this (to a nesting overlay's <c>PortalId</c>) when this
+    /// dropdown is rendered inside another overlay such as a Popover, so its content appends to
+    /// the parent's portal scope instead of registering as a second independent overlay portal.
+    /// Default null (independent root portal — unchanged behavior).
+    /// </summary>
+    [Parameter]
+    public string? ParentPortalId { get; set; }
 
     private string CssClass => ClassNames.cn(
         $"z-{ZIndex} min-w-[8rem] no-focus-ring overflow-hidden rounded-md border bg-popover",

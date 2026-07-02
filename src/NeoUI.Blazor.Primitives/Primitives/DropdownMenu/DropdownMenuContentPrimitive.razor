@@ -13,6 +13,7 @@
 <FloatingPortal IsOpen="@Context.IsOpen"
                 AnchorElement="@Context.State.TriggerElement"
                 PortalId="@_portalId"
+                ParentPortalId="@ParentPortalId"
                 ForceMount="@ForceMount"
                 Side="@Side"
                 Align="@Align"
@@ -44,6 +45,16 @@
     /// </summary>
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    /// <summary>
+    /// Optional parent portal id. When set, this dropdown's content is appended to the
+    /// parent's portal scope (via <c>AppendToPortal</c>) instead of registering as an
+    /// independent root portal — the mechanism submenus use. Set this when the dropdown
+    /// is nested inside another overlay (e.g. a Popover) to avoid two independent portals
+    /// in the same category re-triggering each other's re-render. Default null.
+    /// </summary>
+    [Parameter]
+    public string? ParentPortalId { get; set; }
 
     /// <summary>
     /// Whether pressing Escape should close the dropdown menu.

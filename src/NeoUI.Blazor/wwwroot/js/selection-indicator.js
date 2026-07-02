@@ -364,6 +364,12 @@ export function init(indicator, selector, hoverEnabled, hoverTarget) {
     // doesn't resize (e.g. transform-based collapse, or nested scroll viewports).
     const sidebarAside = container.closest('aside[data-sidebar="sidebar"]');
     if (sidebarAside) resizeObserver.observe(sidebarAside);
+    // Also observe direct children: a child item resizing (e.g. a tab's count badge
+    // appearing/disappearing changes that item's width without changing the container's
+    // own border-box) must still reposition/resize the indicator over the active item.
+    for (const child of container.children) {
+        if (child !== indicator) resizeObserver.observe(child);
+    }
 
     instanceMap.set(indicator, {
         observer,

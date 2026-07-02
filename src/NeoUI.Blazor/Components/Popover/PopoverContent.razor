@@ -10,6 +10,7 @@
                                                    MatchTriggerWidth="@MatchTriggerWidth"
                                                    Strategy="@Strategy"
                                                    ZIndex="@ZIndex"
+                                                   PortalId="@PortalId"
                                                    OnEscapeKeyDown="@OnEscapeKeyDown"
                                                    OnClickOutside="@OnClickOutside"
                                                    OnContentReady="@OnContentReady"
@@ -80,6 +81,15 @@
 
     [Parameter]
     public string? Class { get; set; }
+
+    /// <summary>
+    /// Optional explicit portal id. Set a stable value to let nested overlays
+    /// (e.g. a DropdownMenu rendered inside this popover) attach via their
+    /// <c>ParentPortalId</c>, so they append to this scope instead of registering
+    /// as a second independent overlay portal. Default null (auto-generated).
+    /// </summary>
+    [Parameter]
+    public string? PortalId { get; set; }
 
     [CascadingParameter(Name = "StyleVariant")]
     private StyleVariant _styleVariant { get; set; } = StyleVariant.Default;

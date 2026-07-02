@@ -39,6 +39,15 @@
     public RenderFragment? ChildContent { get; set; }
 
     /// <summary>
+    /// Optional explicit portal id. When set, overrides the auto-generated
+    /// <c>popover-portal-{ContentId}</c>. Give this a stable value so nested overlays
+    /// (e.g. a DropdownMenu inside the popover) can attach to it via <c>ParentPortalId</c>.
+    /// Default null (auto-generated).
+    /// </summary>
+    [Parameter]
+    public string? PortalId { get; set; }
+
+    /// <summary>
     /// Additional attributes to apply to the content container.
     /// </summary>
     [Parameter(CaptureUnmatchedValues = true)]
@@ -145,7 +154,7 @@
                 "Ensure PopoverContentPrimitive is a child of a PopoverPrimitive component.");
         }
 
-        _portalId = $"popover-portal-{Context.ContentId}";
+        _portalId = string.IsNullOrEmpty(PortalId) ? $"popover-portal-{Context.ContentId}" : PortalId;
 
         // Subscribe to context changes
         Context.OnStateChanged += HandleContextStateChanged;
