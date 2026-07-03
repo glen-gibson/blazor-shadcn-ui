@@ -4,13 +4,11 @@
 
 <div class="space-y-8 max-w-4xl">
 
-    <DemoPageHeader
-        Title="Input Group"
-        Description="Enhance inputs with icons, text, and action buttons." />
+    <DemoPageHeader Title="Input Group"
+                    Description="Enhance inputs with icons, text, and action buttons." />
 
-    <DemoSection
-        Title="Basic Examples"
-        Description="Add icons and text to inputs for better context.">
+    <DemoSection Title="Basic Examples"
+                 Description="Add icons and text to inputs for better context.">
         <DemoBlock Code="@_basicCode">
             <div class="space-y-6 max-w-sm">
                 <div class="space-y-2">
@@ -59,9 +57,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Text Addons"
-        Description="Add text prefixes, suffixes, and labels to inputs.">
+    <DemoSection Title="Text Addons"
+                 Description="Add text prefixes, suffixes, and labels to inputs.">
         <DemoBlock Code="@_textAddonsCode">
             <div class="space-y-6 max-w-sm">
                 <div class="space-y-2">
@@ -98,9 +95,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Action Buttons"
-        Description="Integrate action buttons directly into inputs.">
+    <DemoSection Title="Action Buttons"
+                 Description="Integrate action buttons directly into inputs.">
         <DemoBlock Code="@_actionButtonsCode">
             <div class="space-y-6 max-w-sm">
                 <div class="space-y-2">
@@ -139,9 +135,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Form Validation"
-        Description="Show validation states with icons and colors.">
+    <DemoSection Title="Form Validation"
+                 Description="Show validation states with icons and colors.">
         <DemoBlock Code="@_validationCode">
             <div class="space-y-6 max-w-sm">
                 <div class="space-y-2">
@@ -178,9 +173,25 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Advanced Examples"
-        Description="Combine multiple features for complex use cases.">
+    <DemoSection Title="Focus Input or TextArea"
+                 Description="Programaticaly focus element inside InputGroup">
+        <DemoBlock Code="@_focusCode">
+            <div class="space-y-2 max-w-sm">
+                <Label>Address</Label>
+                <InputGroup>
+                    <InputGroupInput Value="Street 67" @ref="_inputRef" />
+                    <InputGroupAddon Align="InputGroupAlign.InlineEnd">
+                        <LucideIcon Name="circle-check" Size="16" Color="Green" />
+                    </InputGroupAddon>
+                </InputGroup>
+
+                <Button OnClick="OnClick">Focus Input</Button>
+            </div>
+        </DemoBlock>
+    </DemoSection>
+
+    <DemoSection Title="Advanced Examples"
+                 Description="Combine multiple features for complex use cases.">
         <DemoBlock Code="@_advancedCode">
             <div class="space-y-6 max-w-sm">
                 <div class="space-y-2">
@@ -233,9 +244,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Dropdown Menu"
-        Description="Integrate dropdown menus with input fields for context actions.">
+    <DemoSection Title="Dropdown Menu"
+                 Description="Integrate dropdown menus with input fields for context actions.">
         <DemoBlock Code="@_dropdownCode">
             <div class="space-y-6 max-w-sm">
                 <div class="space-y-2">
@@ -262,9 +272,8 @@
         </DemoBlock>
     </DemoSection>
 
-    <DemoSection
-        Title="Code Editor"
-        Description="Create code editor interfaces with header and footer toolbars.">
+    <DemoSection Title="Code Editor"
+                 Description="Create code editor interfaces with header and footer toolbars.">
         <DemoBlock Code="@_codeEditorCode">
             <div class="max-w-sm">
                 <InputGroup>
@@ -301,6 +310,14 @@
 </div>
 
 @code {
+    private InputGroupInput? _inputRef;
+
+    private async Task OnClick()
+    {
+        if (_inputRef is null) return;
+        await _inputRef.FocusAsync();
+    }
+
     private void HandleMenuAction(string action)
     {
         Console.WriteLine($"Menu action: {action}");

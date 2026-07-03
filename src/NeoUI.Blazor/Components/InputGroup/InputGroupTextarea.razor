@@ -13,4 +13,5 @@
     aria-invalid="@(AriaInvalid?.ToString().ToLower())"
     @oninput="HandleInput"
     @onchange="HandleChange"
-    @attributes="AdditionalAttributes">@Value</textarea>
+    @attributes="AdditionalAttributes"
+    @ref="textareaReference">@Value</textarea>

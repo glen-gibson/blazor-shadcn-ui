@@ -33,6 +33,7 @@ namespace NeoUI.Blazor;
 /// </example>
 public partial class InputGroupTextarea : ComponentBase
 {
+    private ElementReference textareaReference;
     /// <summary>
     /// Gets or sets the current value of the textarea.
     /// </summary>
@@ -150,4 +151,9 @@ public partial class InputGroupTextarea : ComponentBase
     {
         await Task.CompletedTask;
     }
+
+    /// <summary>
+    /// Moves keyboard focus to the input element.
+    /// </summary>
+    public ValueTask FocusAsync() => textareaReference.FocusAsync();
 }

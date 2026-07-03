@@ -80,6 +80,27 @@ namespace NeoUI.Demo.Shared.Pages.Components
                 </InputGroup>
                 """;
 
+        private const string _focusCode = """
+                <InputGroup>
+                    <InputGroupInput Value="johndoe" @ref="_inputRef" />
+                    <InputGroupAddon Align="InputGroupAlign.InlineEnd">
+                        <LucideIcon Name="circle-check" Size="16" Color="Green" />
+                    </InputGroupAddon>
+                </InputGroup>
+                
+                <Button OnClick="OnClick">Focus Input</Button>
+
+                @code {
+                    private InputGroupInput? _inputRef;
+
+                    private async Task OnClick()
+                    {
+                        if (_inputRef is null) return;
+                        await _inputRef.FocusAsync();
+                    }
+                }
+                """;
+
         private const string _advancedCode = """
                 <!-- Search with clear + submit -->
                 <InputGroup>
