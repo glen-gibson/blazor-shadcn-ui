@@ -244,6 +244,40 @@
         </DemoBlock>
     </DemoSection>
 
+    <DemoSection Title="Two-Way Binding"
+                 Description="Two-way data binding: bind to a C# property with the bind-Value syntax.">
+        <DemoBlock Code="@_twoWayBindingCode">
+            <div class="space-y-2 max-w-sm">
+                <Label>Search</Label>
+                <InputGroup>
+                    <InputGroupAddon Align="InputGroupAlign.InlineStart">
+                        <LucideIcon Name="search" Size="16" />
+                    </InputGroupAddon>
+                    <InputGroupInput Placeholder="Search..." @bind-Value="_inputGroupText" />
+                </InputGroup>
+
+                <span>Search: @_inputGroupText</span>
+            </div>
+        </DemoBlock>
+    </DemoSection>
+
+    <DemoSection Title="Debounce"
+                 Description="Debounce the input value changes to prevent rapid firing. Handled in JS, so intermediate keystrokes never round-trip.">
+        <DemoBlock Code="@_debounceCode">
+            <div class="space-y-2 max-w-sm">
+                <Label>Search</Label>
+                <InputGroup>
+                    <InputGroupAddon Align="InputGroupAlign.InlineStart">
+                        <LucideIcon Name="search" Size="16" />
+                    </InputGroupAddon>
+                    <InputGroupInput Placeholder="Search..." @bind-Value="_debouncedInputGroupText" DebounceDelay="500" />
+                </InputGroup>
+
+                <span>Text: @_debouncedInputGroupText</span>
+            </div>
+        </DemoBlock>
+    </DemoSection>
+
     <DemoSection Title="Dropdown Menu"
                  Description="Integrate dropdown menus with input fields for context actions.">
         <DemoBlock Code="@_dropdownCode">
@@ -311,6 +345,9 @@
 
 @code {
     private InputGroupInput? _inputRef;
+
+    private string _inputGroupText = "";
+    private string _debouncedInputGroupText = "";
 
     private async Task OnClick()
     {
