@@ -292,6 +292,31 @@
   backdrop-filter: var(--menu-translucent-backdrop);
 }
 
+/*
+ * Safari fix — backdrop-filter and the entrance transform must not live on the same element.
+ * The menu content (.bg-popover) runs the open/close transform animation (animate-in / zoom /
+ * slide). WebKit paints an element that has BOTH a transform and a backdrop-filter as a blank,
+ * fully-blurred box, so the whole menu renders invisibly (Chrome/Firefox composite it fine).
+ *
+ * For portal-hosted menus (Popover / DropdownMenu / Select / Combobox) the content is wrapped by
+ * FloatingPortal's [data-portal-content] element, which is positioned via top/left and never
+ * transformed. So we move the blur off the animated content onto that wrapper: the content keeps
+ * its translucent background (the blur shows through its 30% transparency) while the non-animated
+ * wrapper supplies the backdrop-filter, which Safari composites correctly. border-radius clips the
+ * blur to the menu's rounded corners (all four menus use rounded-md). Non-portal surfaces such as
+ * the navigation-menu viewport keep the blur on the element via the rules above.
+ */
+:root.menu-color-default-translucent [data-portal-content] .bg-popover,
+:root:not(.dark).menu-color-inverted-translucent [data-portal-content] .bg-popover {
+  backdrop-filter: none;
+}
+
+:root.menu-color-default-translucent [data-portal-content]:has(.bg-popover),
+:root:not(.dark).menu-color-inverted-translucent [data-portal-content]:has(.bg-popover) {
+  border-radius: var(--radius-md);
+  backdrop-filter: var(--menu-translucent-backdrop);
+}
+
 /* Required for keyboard navigation visual feedback in Select/Combobox/DropdownMenu */
 @layer components {
   [role="option"][data-focused="true"] {
