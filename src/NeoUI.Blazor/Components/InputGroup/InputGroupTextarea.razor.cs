@@ -263,9 +263,15 @@ public partial class InputGroupTextarea : ComponentBase, IAsyncDisposable
 
         try
         {
-            if (_jsInitialized && _inputModule is not null)
+            if (_inputModule is not null)
             {
-                await _inputModule.InvokeVoidAsync("disposeInput", EffectiveId);
+                // Dispose the module even if initializeInput threw after a successful import.
+                // Only tear down JS-side state when initialization actually completed.
+                if (_jsInitialized)
+                {
+                    await _inputModule.InvokeVoidAsync("disposeInput", EffectiveId);
+                }
+
                 await _inputModule.DisposeAsync();
             }
         }
