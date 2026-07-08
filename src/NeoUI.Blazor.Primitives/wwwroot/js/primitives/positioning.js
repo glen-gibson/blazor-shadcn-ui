@@ -296,9 +296,13 @@ export async function computePosition(reference, floating, options = {}) {
 export function applyPosition(floating, position, makeVisible = false) {
   if (!floating || !position) return;
 
-  // Apply all positioning styles atomically to prevent flash
-  // Use higher z-index for fixed positioning (nested dropdowns) to ensure they appear above parent popovers
-  const zIndex = position.strategy === 'fixed' ? '9999' : floatingZIndex;
+  // Apply all positioning styles atomically to prevent flash.
+  // Honor the z-index already assigned to the element (written inline by FloatingPortal
+  // from its ZIndex parameter). Fall back to the default popover level only when nothing
+  // has been set. Previously this hardcoded 9999 for every fixed-strategy element, which
+  // flattened all popovers/selects/dropdowns onto the same layer — so an overlay opened
+  // on top of a fixed-strategy popover would render *behind* it.
+  const zIndex = floating.style.zIndex || floatingZIndex;
   Object.assign(floating.style, {
     position: position.strategy || 'absolute',
     left: `${position.x}px`,

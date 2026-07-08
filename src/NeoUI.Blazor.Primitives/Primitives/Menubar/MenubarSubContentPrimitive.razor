@@ -84,7 +84,7 @@ private readonly List<IMenubarItem> _menuItems = new();
     /// <summary>
     /// Gets the effective z-index value, calculating from depth if not explicitly set.
     /// </summary>
-    private int EffectiveZIndex => 9999; // Use special zIndex value for sub menus
+    private int EffectiveZIndex => ZIndex ?? (ZIndexLevels.PopoverContent + (SubContext?.Depth ?? 0));
 
     protected override void OnInitialized()
     {
