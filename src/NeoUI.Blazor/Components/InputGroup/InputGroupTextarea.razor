@@ -1,7 +1,9 @@
 @namespace NeoUI.Blazor
 
+@* Input/change events are wired through the shared input.js module (see OnAfterRenderAsync)
+   so debouncing runs in the browser without a per-keystroke round-trip. *@
 <textarea
-    id="@Id"
+    id="@EffectiveId"
     data-slot="input-group-control"
     class="@CssClass"
     rows="@Rows"
@@ -11,7 +13,5 @@
     aria-label="@AriaLabel"
     aria-describedby="@AriaDescribedBy"
     aria-invalid="@(AriaInvalid?.ToString().ToLower())"
-    @oninput="HandleInput"
-    @onchange="HandleChange"
     @attributes="AdditionalAttributes"
     @ref="textareaReference">@Value</textarea>
