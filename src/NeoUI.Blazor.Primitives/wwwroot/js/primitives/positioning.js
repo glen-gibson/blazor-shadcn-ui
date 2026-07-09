@@ -35,6 +35,42 @@ function injectRequiredStyles() {
 const cleanupRegistry = new Map();
 let cleanupIdCounter = 0;
 
+// ---------------------------------------------------------------------------
+// Translucent-menu blur radius sync
+//
+// The translucent glass blur lives on the non-transformed [data-portal-content] wrapper (Safari
+// composites it fine, unlike the transformed .bg-popover content — which paints a blank box when
+// it carries both a transform and backdrop-filter). But the wrapper is a POSITIONING element, so
+// its corner radius isn't the menu's radius; without help the blur wouldn't clip to the menu's
+// rounded corners. Mirror the content's radius onto the wrapper so the blur box matches the visible
+// menu. (Width is a config concern, not handled here: menus whose content is auto-width should
+// leave MatchTriggerWidth off so the wrapper shrink-wraps the content — otherwise the size
+// middleware re-pins the wrapper to the trigger width on every autoUpdate tick.)
+// Runs for all browsers (the wrapper carries the blur on all of them); harmless when no translucent
+// theme is active (the wrapper has no blur/background).
+// ---------------------------------------------------------------------------
+
+/**
+ * Clips the [data-portal-content] wrapper's blur to the menu content's corner radius.
+ * @param {HTMLElement} floating - the [data-portal-content] wrapper (carries backdrop-filter)
+ * @param {HTMLElement} content  - the .bg-popover content element (the visible menu box)
+ */
+function syncWrapperToContent(floating, content) {
+  if (!floating || !content || content === floating) return;
+
+  // Mirror the content's rounded-* utility classes onto the wrapper as CLASSES, not inline style.
+  // Blazor owns (and rewrites) the wrapper's `style` attribute around open, so an inline
+  // border-radius races with that render and gets wiped intermittently. Blazor renders NO `class`
+  // on the wrapper, so classes we add here are never diffed away, and a rounded-* utility resolves
+  // to the same radius as the content (rounded-md default, rounded-3xl in Luma, any custom value).
+  for (const c of [...floating.classList]) {
+    if (c.startsWith('rounded')) floating.classList.remove(c);
+  }
+  for (const c of content.className.split(/\s+/)) {
+    if (c.startsWith('rounded')) floating.classList.add(c);
+  }
+}
+
 /**
  * Lazy loads Floating UI from preloaded global or CDN with fallback
  */
@@ -352,6 +388,9 @@ export function applyPosition(floating, position, makeVisible = false) {
       floating.style.setProperty('top', floating.style.top, 'important');
       floating.style.setProperty('left', floating.style.left, 'important');
 
+      // Make the wrapper's translucent blur box match the content's radius + width.
+      syncWrapperToContent(floating, contentElement);
+
       // Dispatch event to signal element is now visible and positioned
       floating.dispatchEvent(new CustomEvent('neoui:visible', { bubbles: true }));
     });
@@ -466,6 +505,9 @@ export async function showFloating(floating, reference = null, options = null) {
     floating.style.setProperty('visibility', 'visible', 'important');
     floating.style.setProperty('opacity', '1', 'important');
     floating.style.setProperty('pointer-events', 'auto', 'important');
+
+    // Make the wrapper's translucent blur box match the content's radius + width.
+    syncWrapperToContent(floating, contentElement);
 
     // Dispatch event to signal element is now visible
     floating.dispatchEvent(new CustomEvent('neoui:visible', { bubbles: true }));
