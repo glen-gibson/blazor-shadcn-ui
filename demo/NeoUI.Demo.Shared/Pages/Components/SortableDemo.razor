@@ -217,6 +217,44 @@
         </DemoBlock>
     </DemoSection>
 
+    @* ── Inside a Dialog ─────────────────────────────────────── *@
+    <DemoSection Title="Inside a Dialog"
+                 Description="Sortable works inside a Dialog even though the dialog centres itself with a CSS transform. The drag overlay detects the transformed containing block on drag start and compensates, so the ghost stays under the cursor instead of drifting.">
+        <DemoBlock Code="@_dialogCode">
+            <Dialog>
+                <DialogTrigger AsChild>
+                    <Button Variant="ButtonVariant.Outline">Reorder in dialog</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reorder tasks</DialogTitle>
+                        <DialogDescription>Drag the handles to reorder. The ghost should track the cursor exactly.</DialogDescription>
+                    </DialogHeader>
+                    <Sortable TItem="CardItem"
+                              Items="@_dialogItems"
+                              OnItemsReordered="@(r => _dialogItems = r)"
+                              OnDragEnd="@(e => ShowDragEndToast(e, _dialogItems.ElementAtOrDefault(e.Moved ? e.ToIndex : e.FromIndex)?.Name))"
+                              OnDragCancel="@ShowDragCancelToast"
+                              GetItemId="@(i => i.Id)">
+                        <SortableContent Class="block">
+                            <DataView Items="@_dialogItems" ItemKey="@(i => i.Id)"
+                                      ShowToolbar="false" ShowPagination="false">
+                                <ListTemplate Context="item">
+                                    <SortableItem @key="@item.Id" Value="@item.Id" Class="-mx-1 rounded-none border-0 border-b last:border-b-0 shadow-none px-2">
+                                        <SortableItemHandle />
+                                        <span class="flex-1 text-sm font-medium select-none">@item.Name</span>
+                                        <Badge Variant="BadgeVariant.Secondary" Class="text-xs">@item.Tag</Badge>
+                                    </SortableItem>
+                                </ListTemplate>
+                            </DataView>
+                        </SortableContent>
+                        <SortableOverlay />
+                    </Sortable>
+                </DialogContent>
+            </Dialog>
+        </DemoBlock>
+    </DemoSection>
+
     @* ── Kanban Board (cross-list) ───────────────────────────── *@
     <DemoSection Title="Kanban Board"
                  Description="Items drag freely between columns using the Group parameter. OnItemTransferredOut removes the item from its source list; OnItemTransferredIn inserts it into the target.">
@@ -446,6 +484,14 @@
         new("dv3", "Implement API",      "Backend"),
         new("dv4", "Code review",        "DevOps"),
         new("dv5", "Deploy to staging",  "Ops"),
+    ];
+
+    private IList<CardItem> _dialogItems =
+    [
+        new("dlg1", "Draft proposal",   "Docs"),
+        new("dlg2", "Review budget",    "Finance"),
+        new("dlg3", "Schedule kickoff", "Ops"),
+        new("dlg4", "Assign owners",    "Team"),
     ];
 
     private IList<CardItem> _dataViewGridItems =
