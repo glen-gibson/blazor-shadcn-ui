@@ -7,6 +7,10 @@
 
 const STORAGE_PREFIX = "neoui:state:";
 const COOKIE_EXPIRATION_DAYS = 365;
+// Stay well under the ~4KB per-cookie limit (leaving room for the name and attributes). Larger
+// values would be truncated by the browser — breaking the JSON — so we skip the cookie mirror for
+// them and rely on localStorage (only SSR pre-render restore is forgone in that case).
+const MAX_COOKIE_BYTES = 3800;
 
 /**
  * Get a saved value from localStorage (with cookie fallback).
@@ -16,10 +20,14 @@ const COOKIE_EXPIRATION_DAYS = 365;
 export function getState(key) {
     const storageKey = STORAGE_PREFIX + key;
 
-    // Try localStorage first
-    const localValue = localStorage.getItem(storageKey);
-    if (localValue !== null) {
-        return localValue;
+    // localStorage can throw in privacy / blocked-storage modes — fall back to the cookie.
+    try {
+        const localValue = localStorage.getItem(storageKey);
+        if (localValue !== null) {
+            return localValue;
+        }
+    } catch {
+        // fall through to the cookie
     }
 
     // Fallback to cookie (readable server-side during pre-render)
@@ -34,7 +42,13 @@ export function getState(key) {
 export function setState(key, value) {
     const storageKey = STORAGE_PREFIX + key;
 
-    localStorage.setItem(storageKey, value);
+    // Best-effort: a localStorage write can throw (quota exceeded / blocked storage); still mirror
+    // to the cookie so persistence keeps working.
+    try {
+        localStorage.setItem(storageKey, value);
+    } catch {
+        // ignore — the cookie mirror below is the fallback
+    }
     setCookie(storageKey, value, COOKIE_EXPIRATION_DAYS);
 }
 
@@ -45,7 +59,11 @@ export function setState(key, value) {
 export function clearState(key) {
     const storageKey = STORAGE_PREFIX + key;
 
-    localStorage.removeItem(storageKey);
+    try {
+        localStorage.removeItem(storageKey);
+    } catch {
+        // best-effort
+    }
     deleteCookie(storageKey);
 }
 
@@ -90,6 +108,14 @@ function setCookie(name, value, days) {
     // URL-encode the name and value to handle special characters like colons
     const encodedName = encodeURIComponent(name);
     const encodedValue = encodeURIComponent(value || "");
+
+    // Cookies are size-limited (~4KB) and sent on every request. Skip mirroring oversized values —
+    // the browser would truncate them (corrupting the JSON) — and drop any prior cookie so SSR never
+    // reads a stale/partial value. localStorage still holds the full value.
+    if (encodedName.length + encodedValue.length > MAX_COOKIE_BYTES) {
+        deleteCookie(name);
+        return;
+    }
 
     document.cookie = encodedName + "=" + encodedValue + expires + "; path=/; SameSite=Lax" + secure;
 }
