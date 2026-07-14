@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using NeoUI.Blazor.Primitives;
+using NeoUI.Blazor.Services;
 
 namespace NeoUI.Blazor;
 
@@ -132,6 +136,26 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
 
     [Inject]
     private ILocalizer Localizer { get; set; } = default!;
+
+    // Generic keyed store (localStorage + cookie) used to persist view state per StateKey.
+    [Inject]
+    private KeyedStateService StateStore { get; set; } = default!;
+
+    // Framework state used for the SSR→interactive handover of restored view state.
+    [Inject]
+    private PersistentComponentState PersistentState { get; set; } = default!;
+
+    // Resolves IHttpContextAccessor (Server/SSR only) for the cookie restore tier.
+    [Inject]
+    private IServiceProvider ServiceProvider { get; set; } = default!;
+
+    private PersistingComponentStateSubscription _persistingSubscription;
+    private bool _stateRestored;
+    // Bumped when an async (post-first-render) restore changes state, to re-key the Pagination so its
+    // page-size selector re-initializes to the restored value (it only reads state on mount).
+    private int _stateRestoreKey;
+    private bool HasStateKey => !string.IsNullOrWhiteSpace(StateKey);
+    private string PersistenceKey => $"DataTableState_{StateKey}";
 
     /// <summary>
     /// Stores the list of registered column definitions.
@@ -534,6 +558,16 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
     public int InitialPageSize { get; set; } = 5;
 
     /// <summary>
+    /// Gets or sets a stable, app-unique key that enables automatic persistence of this table's
+    /// view state — page size, current page, and sort — across navigation and reloads.
+    /// When null or empty (the default), nothing is persisted and behavior is unchanged.
+    /// State is stored per key in localStorage (with a cookie mirror for SSR pre-render) under the
+    /// <c>neoui:state:</c> prefix.
+    /// </summary>
+    [Parameter]
+    public string? StateKey { get; set; }
+
+    /// <summary>
     /// Gets or sets custom toolbar actions (buttons, etc.).
     /// </summary>
     [Parameter]
@@ -920,6 +954,122 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
         _tableState.Pagination.CurrentPage = 1;
         // Set selection mode on the state so Select/Deselect methods work correctly
         _tableState.Selection.Mode = GetPrimitiveSelectionMode();
+
+        // Opt-in view-state persistence: restore from synchronous sources here (PersistentComponentState
+        // for the SSR→interactive handover, cookie for server pre-render) so the very first render already
+        // reflects the saved page size/page/sort. The async localStorage fallback runs in OnAfterRenderAsync.
+        if (HasStateKey)
+        {
+            TryRestoreSyncState();
+            _persistingSubscription = PersistentState.RegisterOnPersisting(PersistState);
+        }
+    }
+
+    // ── View-state persistence (opt-in via StateKey) ─────────────────────────
+
+    /// <summary>Restores view state from the synchronous sources: PersistentComponentState, then cookie.</summary>
+    private void TryRestoreSyncState()
+    {
+        // Tier 0 — in-memory cache on the (circuit/app-scoped) store. This is the freshest source and,
+        // crucially, synchronous: it lets a remount within the same session (e.g. switching back to a
+        // tab) restore BEFORE the first render, so there's no flicker from a post-render async read.
+        if (StateStore.TryGetCached(StateKey!, out var cached) && TryDeserialize(cached, out var fromCache))
+        {
+            ApplyViewState(fromCache);
+            _stateRestored = true;
+            return;
+        }
+
+        // Tier 1 — PersistentComponentState (seamless SSR → interactive handover).
+        if (PersistentState.TryTakeFromJson<DataTableViewState>(PersistenceKey, out var persisted) && persisted is not null)
+        {
+            ApplyViewState(persisted);
+            _stateRestored = true;
+            return;
+        }
+
+        // Tier 2 — cookie, readable server-side during pre-render via IHttpContextAccessor.
+        var httpContext = ServiceProvider.GetService<IHttpContextAccessor>()?.HttpContext;
+        if (httpContext is null)
+            return;
+
+        var cookieKey = KeyedStateService.KeyPrefix + StateKey;
+        var cookies = httpContext.Request.Cookies;
+        string? cookieValue = null;
+        if (cookies.TryGetValue(Uri.EscapeDataString(cookieKey), out var encoded))
+            cookieValue = Uri.UnescapeDataString(encoded);
+        else if (cookies.TryGetValue(cookieKey, out var plain))
+            cookieValue = plain;
+
+        if (TryDeserialize(cookieValue, out var fromCookie))
+        {
+            ApplyViewState(fromCookie);
+            _stateRestored = true;
+        }
+    }
+
+    private static bool TryDeserialize(string? json, out DataTableViewState state)
+    {
+        state = default!;
+        if (string.IsNullOrEmpty(json))
+            return false;
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<DataTableViewState>(json);
+            if (parsed is null)
+                return false;
+            state = parsed;
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Applies a restored snapshot onto the internal table state (paging + sort).</summary>
+    private void ApplyViewState(DataTableViewState state)
+    {
+        // PageSize FIRST — the PaginationState.PageSize setter forces CurrentPage back to 1.
+        // Ignore a persisted size that is no longer offered so the selector doesn't render blank.
+        var size = (PageSizes is { Length: > 0 } && Array.IndexOf(PageSizes, state.PageSize) >= 0)
+            ? state.PageSize
+            : InitialPageSize;
+        _tableState.Pagination.PageSize = size;
+        _tableState.Pagination.CurrentPage = Math.Max(1, state.CurrentPage);
+        // TotalItems (set later in ProcessDataAsync) self-clamps CurrentPage to TotalPages.
+
+        // Safe even if the column isn't registered yet — sorting no-ops on an unknown id.
+        _tableState.Sorting.SortedColumn = state.SortedColumn;
+        _tableState.Sorting.Direction = state.Direction;
+    }
+
+    private DataTableViewState BuildViewState() => new()
+    {
+        PageSize = _tableState.Pagination.PageSize,
+        CurrentPage = _tableState.Pagination.CurrentPage,
+        SortedColumn = _tableState.Sorting.SortedColumn,
+        Direction = _tableState.Sorting.Direction,
+    };
+
+    /// <summary>Cheap equality key of the current view state, used to detect whether a restore changed anything.</summary>
+    private (int, int, string?, SortDirection) SnapshotKey() =>
+        (_tableState.Pagination.PageSize, _tableState.Pagination.CurrentPage, _tableState.Sorting.SortedColumn, _tableState.Sorting.Direction);
+
+    /// <summary>PersistentComponentState callback — hands the current view state to the client after pre-render.</summary>
+    private Task PersistState()
+    {
+        if (HasStateKey)
+            PersistentState.PersistAsJson(PersistenceKey, BuildViewState());
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Saves the current view state to client storage (localStorage + cookie). No-op without a StateKey.</summary>
+    private async Task PersistStateAsync()
+    {
+        if (!HasStateKey)
+            return;
+        await StateStore.SetStateAsync(StateKey!, JsonSerializer.Serialize(BuildViewState()));
     }
 
     /// <summary>
@@ -1236,11 +1386,13 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
         {
             await _virtualizeRef.RefreshDataAsync();
             StateHasChanged();
+            await PersistStateAsync();
             return;
         }
 
         await ProcessDataAsync();
         StateHasChanged();
+        await PersistStateAsync();
     }
 
     /// <summary>
@@ -1797,6 +1949,7 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
         _paginationVersion++;  // Track pagination change for ShouldRender
         await ProcessDataAsync();
         StateHasChanged();
+        await PersistStateAsync();
     }
 
     /// <summary>
@@ -1809,6 +1962,7 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
         _paginationVersion++;  // Track pagination change for ShouldRender
         await ProcessDataAsync();
         StateHasChanged();
+        await PersistStateAsync();
     }
 
     /// <summary>
@@ -1883,6 +2037,32 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // localStorage is the live source of truth — it is rewritten on every change, whereas the
+        // synchronous tiers used in OnInitialized can be stale: a PersistentComponentState snapshot
+        // is a one-shot handover payload that can resurface (with an old value) on a tab remount
+        // within a running circuit. So on first render always reconcile against localStorage and let
+        // it win, re-rendering only when it actually differs (no flash when it already matches).
+        if (firstRender && HasStateKey)
+        {
+            var json = await StateStore.GetStateAsync(StateKey!);
+            if (TryDeserialize(json, out var restored))
+            {
+                var before = SnapshotKey();
+                ApplyViewState(restored);
+                _stateRestored = true;
+                if (SnapshotKey() != before)
+                {
+                    // Bump a tracked version so ShouldRender() doesn't suppress this post-first-render
+                    // update (a single render re-emits both the pagination selector and sort indicators),
+                    // and re-key the Pagination so its page-size selector re-reads the restored value.
+                    _paginationVersion++;
+                    _stateRestoreKey++;
+                    await ProcessDataAsync();
+                    StateHasChanged();
+                }
+            }
+        }
+
         try
         {
             _dotNetRef ??= DotNetObjectReference.Create(this);
@@ -1964,6 +2144,8 @@ public partial class DataTable<TData> : ComponentBase, IAsyncDisposable where TD
 
     public async ValueTask DisposeAsync()
     {
+        _persistingSubscription.Dispose();
+
         if (_resizeCleanup is not null)
         {
             try { await _resizeCleanup.InvokeVoidAsync("dispose"); } catch { }

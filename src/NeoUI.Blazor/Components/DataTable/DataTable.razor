@@ -264,7 +264,8 @@
 
         @if (ShowPagination && !IsLoading && !IsVirtualized && !IsTreeMode && _processedData.Any())
         {
-            <Pagination State="@_tableState.Pagination"
+            <Pagination @key="_stateRestoreKey"
+                        State="@_tableState.Pagination"
                         PageSizes="@PageSizes"
                         OnPageChanged="@HandlePageChanged"
                         OnPageSizeChanged="@HandlePageSizeChanged"

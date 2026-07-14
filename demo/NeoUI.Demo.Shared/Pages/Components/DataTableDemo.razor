@@ -571,6 +571,45 @@
     </DemoSection>
 
     <DemoSection
+        Title="State Persistence"
+        Description="Set a stable StateKey to automatically persist page size, current page and sort per table. State survives tab switches (the inactive tab unmounts), navigation and full reloads — stored in localStorage with a cookie mirror for SSR. Try it: change the page size / sort a column / go to page 2, switch to 'Other tab', switch back — it's preserved. Omit StateKey to opt out (the second table below still resets).">
+        <DemoBlock Code="@_statePersistenceCode">
+            <Tabs DefaultValue="table">
+                <TabsList>
+                    <TabsTrigger Value="table">People (StateKey)</TabsTrigger>
+                    <TabsTrigger Value="other">Other tab</TabsTrigger>
+                </TabsList>
+                <TabsContent Value="table">
+                    <div class="space-y-6">
+                        <div>
+                            <p class="text-sm font-medium mb-2">With <code>StateKey="demo-people"</code> — persists</p>
+                            <DataTable TData="Person" Data="@people" StateKey="demo-people" InitialPageSize="5">
+                                <Columns>
+                                    <DataTableColumn TData="Person" TValue="string" Property="@(p => p.Name)" Header="Name" Sortable />
+                                    <DataTableColumn TData="Person" TValue="string" Property="@(p => p.Email)" Header="Email" Sortable />
+                                    <DataTableColumn TData="Person" TValue="int" Property="@(p => p.Age)" Header="Age" Sortable Alignment="ColumnAlignment.Right" />
+                                </Columns>
+                            </DataTable>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium mb-2">No StateKey — resets on tab switch</p>
+                            <DataTable TData="Person" Data="@people" InitialPageSize="5">
+                                <Columns>
+                                    <DataTableColumn TData="Person" TValue="string" Property="@(p => p.Name)" Header="Name" Sortable />
+                                    <DataTableColumn TData="Person" TValue="int" Property="@(p => p.Age)" Header="Age" Sortable Alignment="ColumnAlignment.Right" />
+                                </Columns>
+                            </DataTable>
+                        </div>
+                    </div>
+                </TabsContent>
+                <TabsContent Value="other">
+                    <p class="text-sm text-muted-foreground p-6">Switch back to the People tab — the keyed table keeps its page size, page and sort; the unkeyed one resets.</p>
+                </TabsContent>
+            </Tabs>
+        </DemoBlock>
+    </DemoSection>
+
+    <DemoSection
         Title="DataTable API"
         Description="DataTable component parameters and their types.">
         <DemoPropsTable Rows="_dataTableProps" />
