@@ -16,6 +16,7 @@ namespace NeoUI.Demo.Shared.Pages.Components
                 new("IsLoading", "bool", "false", "Shows a loading indicator instead of table content."),
                 new("InitialPageSize", "int", "5", "The initial number of rows per page."),
                 new("PageSizes", "int[]", "[5,10,20,50,100]", "Available page size options in the pagination selector."),
+                new("StateKey", "string?", "null", "When set, persists the table's view state (page size, current page, sort) per key across navigation and reloads (localStorage + cookie)."),
                 new("Dense", "bool", "true", "Compact cell padding (header h-9, body py-2 px-4). When false, uses h-12 / p-4."),
                 new("HeaderBackground", "bool", "true", "Applies bg-muted/50 to the header row."),
                 new("HeaderBorder", "bool", "false", "Vertical dividers between header cells (divide-x divide-border)."),
@@ -73,6 +74,30 @@ namespace NeoUI.Demo.Shared.Pages.Components
                 new("Resizable", "bool?", "null", "Per-column resize override. null inherits the table-level Resizable setting."),
                 new("Reorderable", "bool?", "null", "Per-column reorder override. null inherits the table-level Reorderable setting. Pinned columns and the selection column are always excluded."),
             ];
+
+        private const string _statePersistenceCode = """
+                @* Give the table a stable StateKey to auto-persist page size, current page and sort.
+                   The state survives tab switches (unmount/remount), navigation and full reloads —
+                   stored per key in localStorage with a cookie mirror for SSR. Omit StateKey to opt out. *@
+                <Tabs DefaultValue="table">
+                    <TabsList>
+                        <TabsTrigger Value="table">People</TabsTrigger>
+                        <TabsTrigger Value="other">Other tab</TabsTrigger>
+                    </TabsList>
+                    <TabsContent Value="table">
+                        <DataTable TData="Person" Data="people" StateKey="demo-people" InitialPageSize="5">
+                            <Columns>
+                                <DataTableColumn TData="Person" TValue="string" Property="@(p => p.Name)" Header="Name" Sortable />
+                                <DataTableColumn TData="Person" TValue="string" Property="@(p => p.Email)" Header="Email" Sortable />
+                                <DataTableColumn TData="Person" TValue="int" Property="@(p => p.Age)" Header="Age" Sortable />
+                            </Columns>
+                        </DataTable>
+                    </TabsContent>
+                    <TabsContent Value="other">
+                        <p>Switch away and back — the People tab keeps its page size, page and sort.</p>
+                    </TabsContent>
+                </Tabs>
+                """;
 
         private const string _basicTableCode = """
                 <DataTable TData="Person"

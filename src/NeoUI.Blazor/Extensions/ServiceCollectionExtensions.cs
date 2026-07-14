@@ -98,7 +98,10 @@ public static class ServiceCollectionExtensions
       
         // Register CollapsibleStateService for sidebar collapsible menu state persistence
         services.AddScoped<CollapsibleStateService>();
-        
+
+        // Register KeyedStateService for generic keyed state persistence (e.g. DataTable StateKey)
+        services.AddScoped<KeyedStateService>();
+
         // Register ThemeService for theme management
         services.AddScoped<ThemeService>();
 
