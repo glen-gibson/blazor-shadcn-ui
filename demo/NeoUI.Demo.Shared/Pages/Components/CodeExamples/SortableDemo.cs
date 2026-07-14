@@ -2,6 +2,41 @@ namespace NeoUI.Demo.Shared.Pages.Components
 {
     partial class SortableDemo
     {
+        private const string _dialogCode =
+            """
+            @* Sortable works inside a Dialog. The dialog centres itself with a CSS
+               transform, which makes position:fixed resolve against the dialog rather
+               than the viewport — the drag overlay compensates automatically, so the
+               ghost tracks the cursor without drifting. No extra configuration needed. *@
+            <Dialog>
+                <DialogTrigger AsChild>
+                    <Button Variant="ButtonVariant.Outline">Reorder in dialog</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reorder tasks</DialogTitle>
+                    </DialogHeader>
+                    <Sortable TItem="MyItem"
+                              Items="@items"
+                              OnItemsReordered="@(r => items = r)"
+                              GetItemId="@(i => i.Id)">
+                        <SortableContent Class="block">
+                            <DataView Items="@items" ItemKey="@(i => i.Id)"
+                                      ShowToolbar="false" ShowPagination="false">
+                                <ListTemplate Context="item">
+                                    <SortableItem Value="@item.Id">
+                                        <SortableItemHandle />
+                                        <span class="flex-1 text-sm font-medium select-none">@item.Name</span>
+                                    </SortableItem>
+                                </ListTemplate>
+                            </DataView>
+                        </SortableContent>
+                        <SortableOverlay />
+                    </Sortable>
+                </DialogContent>
+            </Dialog>
+            """;
+
         private const string _defaultCode =
             """
             <Sortable TItem="MyItem"

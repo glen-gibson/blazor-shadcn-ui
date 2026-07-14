@@ -39,6 +39,32 @@ function getOverlay(instanceId) {
     return document.querySelector(`[data-sortable-overlay-for="${instanceId}"]`);
 }
 
+/**
+ * The overlay is position:fixed and moved with viewport (client) coordinates. That only lands
+ * correctly when its containing block is the viewport. If an ancestor has a transform — e.g. a
+ * Dialog centres its panel with `translate(-50%,-50%)` (and animates with `zoom-*`) — that
+ * ancestor becomes the containing block instead, so viewport coordinates are offset by the
+ * ancestor's on-screen position and the dragged ghost drifts away from the pointer.
+ *
+ * Measure that offset once at drag start (set the overlay to a known viewport point, read back
+ * where it actually rendered, take the delta) and add it on every subsequent move. Zero overhead
+ * and a no-op when there is no transformed ancestor. Requires the overlay to be display:block.
+ */
+function measureOverlayCorrection(state, overlay, vx, vy) {
+    overlay.style.left = vx + 'px';
+    overlay.style.top  = vy + 'px';
+    const r = overlay.getBoundingClientRect();
+    state.overlayCorrectionX = vx - r.left;
+    state.overlayCorrectionY = vy - r.top;
+}
+
+/** Positions a position:fixed overlay so its top-left lands at viewport point (vx, vy),
+ *  compensating for a transformed ancestor (see measureOverlayCorrection). */
+function setOverlayPos(state, overlay, vx, vy) {
+    overlay.style.left = (vx + (state.overlayCorrectionX || 0)) + 'px';
+    overlay.style.top  = (vy + (state.overlayCorrectionY || 0)) + 'px';
+}
+
 /** Returns the instanceIds of all other instances in the same group. */
 function getGroupPeers(state) {
     if (!state.group) return [];
@@ -455,10 +481,12 @@ function startDrag(state, orientation) {
 
         overlay.style.width   = activeRect.width  + 'px';
         overlay.style.height  = activeRect.height + 'px';
-        overlay.style.left    = activeRect.left   + 'px';
-        overlay.style.top     = activeRect.top    + 'px';
         overlay.style.display = 'block';
         overlay.setAttribute('data-state', 'dragging');
+
+        // Compensate for any transformed ancestor (e.g. a Dialog) breaking fixed positioning.
+        measureOverlayCorrection(state, overlay, activeRect.left, activeRect.top);
+        setOverlayPos(state, overlay, activeRect.left, activeRect.top);
 
         // Clone source element into overlay if no custom child content.
         // Skip if the overlay declares custom ChildContent via data-has-child-content —
@@ -484,8 +512,7 @@ function moveDrag(state, x, y, orientation) {
 
     const overlay = getOverlay(state.instanceId);
     if (overlay) {
-        overlay.style.left = (x - state.offsetX) + 'px';
-        overlay.style.top  = (y - state.offsetY)  + 'px';
+        setOverlayPos(state, overlay, x - state.offsetX, y - state.offsetY);
     }
 
     applyItemTransforms(state, orientation);
@@ -781,10 +808,11 @@ function buildKeyboardHandlers(state, orientation) {
             if (overlay) {
                 overlay.style.width   = rect.width  + 'px';
                 overlay.style.height  = rect.height + 'px';
-                overlay.style.left    = rect.left   + 'px';
-                overlay.style.top     = rect.top    + 'px';
                 overlay.style.display = 'block';
                 overlay.setAttribute('data-state', 'dragging');
+                // Compensate for any transformed ancestor (e.g. a Dialog) breaking fixed positioning.
+                measureOverlayCorrection(state, overlay, rect.left, rect.top);
+                setOverlayPos(state, overlay, rect.left, rect.top);
                 if (overlay.childElementCount === 0 && !overlay.dataset.hasChildContent) {
                     setupCloneInOverlay(overlay, item);
                     state.overlayCloned = true;
