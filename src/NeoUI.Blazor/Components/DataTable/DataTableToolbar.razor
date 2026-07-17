@@ -1,16 +1,39 @@
 @namespace NeoUI.Blazor
 @typeparam TData where TData : class
 @inject ILocalizer Localizer
+@* Desktop is one row — search, filters, columns, actions — and is unchanged from sm up.
+   Below sm the filters and the sort control move behind a view-settings sheet, so the only things
+   competing for the first row are the search box, the sheet trigger and the consumer's actions. *@
 <div class="@ClassNames.cn("flex items-center justify-between gap-2 pt-4", ToolbarClass)">
     <div class="flex flex-1 items-center gap-2">
         <Input @bind-Value="@_searchValue"
                @bind-Value:after="@HandleSearchChanged"
                Placeholder="@Localizer["DataTable.Search"]"
-               Class="h-8 w-[180px]" />
+               Class="h-8 flex-1 sm:w-[180px] sm:flex-none" />
 
+        @* Mobile-only entry point to the sheet. Rendered only when the sheet would have something in it. *@
+        @if (HasViewSettings)
+        {
+            @* ButtonSize.Icon, not Default + p-0: Default carries px-4, and cn() does not treat the p-0
+               shorthand as superseding it, so the padding survived and squeezed a w-8 button's content
+               box to nothing — the icon was there but crushed. Icon sizing carries no padding at all. *@
+            <Button Variant="ButtonVariant.Outline"
+                    Size="ButtonSize.Icon"
+                    Class="h-8 w-8 shrink-0 sm:hidden"
+                    aria-label="@Localizer["DataTable.ViewSettings"]"
+                    OnClick="@(() => _viewSettingsOpen = true)">
+                <LucideIcon Name="sliders-horizontal" Size="16" />
+            </Button>
+        }
+
+        @* Desktop copy of the filters. The sheet renders the same fragment again for mobile: with no
+           C#-side breakpoint, responsive means both branches exist and CSS picks. Both copies bind to
+           the same consumer state, so whichever is visible stays in sync. *@
         @if (ToolbarFilters != null)
         {
-            @ToolbarFilters
+            <div class="hidden items-center gap-2 sm:flex">
+                @ToolbarFilters
+            </div>
         }
 
         @if (Columns.Any(c => c.Filterable))
@@ -55,8 +78,81 @@
     }
 </div>
 
+@if (HasViewSettings)
+{
+    @* Changes apply live, so there is nothing to commit and no Cancel to honour: the consumer's filter
+       state is bound directly and cannot be rolled back from here. The single Done button just closes,
+       and is named for what it does rather than implying a staged Apply. *@
+    @* Nothing below is rendered until the sheet opens — SheetPortal only mounts its content while open
+       (ForceMount defaults to false). The trigger above is mobile-only, so on desktop this never opens
+       and never renders: the second copy of the filters costs nothing there. Do not CSS-hide the content
+       instead — that would keep the overlay while hiding the panel. *@
+    <Sheet Open="@_viewSettingsOpen" OpenChanged="@(v => _viewSettingsOpen = v)" Side="@SheetSide.Bottom">
+        <SheetContent Side="@SheetSide.Bottom">
+            <SheetHeader>
+                <SheetTitle>@Localizer["DataTable.ViewSettings"]</SheetTitle>
+            </SheetHeader>
+
+            <div class="space-y-5 py-2">
+                @if (ToolbarFilters != null)
+                {
+                    <div>
+                        <div class="mb-2 text-sm font-medium">@Localizer["DataTable.Filters"]</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            @ToolbarFilters
+                        </div>
+                    </div>
+                }
+
+                @if (ShowMobileSort && _sortableColumns.Count > 0)
+                {
+                    <div>
+                        <div class="mb-2 text-sm font-medium">@Localizer["DataTable.SortBy"]</div>
+                        @* Chips, not a Select: each has its own handler, so re-tapping the active column can
+                           flip direction (a Select raises nothing when its current value is re-picked) and
+                           "no sort" is a plain affordance rather than a sentinel value in the sort model. *@
+                        <div class="flex flex-wrap items-center gap-2">
+                            <Button Variant="@(ActiveSortColumn is null ? ButtonVariant.Secondary : ButtonVariant.Outline)"
+                                    Size="ButtonSize.Small" Class="h-8"
+                                    OnClick="@ClearSortAsync">
+                                @Localizer["DataTable.SortNone"]
+                            </Button>
+                            @foreach (var column in _sortableColumns)
+                            {
+                                var isActive = ActiveSortColumn?.Id == column.Id;
+                                var ascending = isActive && SortDirection == SortDirection.Ascending;
+                                @* Only the active chip states a direction. An inactive chip has no direction —
+                                   labelling it announced "Descending" to screen readers for a column that was
+                                   neither sorted descending nor about to be (tapping it sorts ascending). Its
+                                   text is already its accessible name, so a null here omits the attribute. *@
+                                <Button Variant="@(isActive ? ButtonVariant.Secondary : ButtonVariant.Outline)"
+                                        Size="ButtonSize.Small" Class="h-8"
+                                        aria-label="@(isActive ? $"{column.Header} · {(ascending ? Localizer["DataTable.SortAscending"] : Localizer["DataTable.SortDescending"])}" : null)"
+                                        OnClick="@(() => ToggleSortAsync(column.Id))">
+                                    @column.Header
+                                    @if (isActive)
+                                    {
+                                        <LucideIcon Name="@(ascending ? "arrow-up" : "arrow-down")" Size="12" />
+                                    }
+                                </Button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <SheetFooter>
+                <Button Class="w-full" OnClick="@(() => _viewSettingsOpen = false)">
+                    @Localizer["DataTable.Done"]
+                </Button>
+            </SheetFooter>
+        </SheetContent>
+    </Sheet>
+}
+
 @code {
     private string _searchValue = string.Empty;
+    private bool _viewSettingsOpen;
 
     [Parameter]
     public string GlobalSearchValue { get; set; } = string.Empty;
@@ -82,9 +178,71 @@
     [Parameter]
     public string? ToolbarClass { get; set; }
 
+    /// <summary>Id of the currently sorted column, or null when unsorted.</summary>
+    [Parameter]
+    public string? SortedColumn { get; set; }
+
+    /// <summary>Direction of the current sort.</summary>
+    [Parameter]
+    public SortDirection SortDirection { get; set; }
+
+    /// <summary>Raised when a sort is chosen in the view-settings sheet. An empty column id clears it.</summary>
+    [Parameter]
+    public EventCallback<(string ColumnId, SortDirection Direction)> OnSortSelected { get; set; }
+
+    /// <summary>
+    /// Shows the sort section in the mobile view-settings sheet when any column is sortable.
+    /// Sorting stays reachable on desktop by clicking a column header. Default true.
+    /// </summary>
+    [Parameter]
+    public bool ShowMobileSort { get; set; } = true;
+
+    private List<DataTable<TData>.ColumnData> _sortableColumns = new();
+
+    /// <summary>True when the sheet would have any content — otherwise its trigger is not rendered.</summary>
+    private bool HasViewSettings => ToolbarFilters != null || (ShowMobileSort && _sortableColumns.Count > 0);
+
+    /// <summary>
+    /// The column the table is actually sorted by, resolved against ALL columns rather than the offerable
+    /// ones: hiding a column via the columns menu does not clear the sort, so resolving against the
+    /// filtered list would report "unsorted" for a table that is still sorted — and light up the
+    /// "no sort" chip as if it were true.
+    /// </summary>
+    private DataTable<TData>.ColumnData? ActiveSortColumn =>
+        SortDirection == SortDirection.None
+            ? null
+            : Columns.FirstOrDefault(c => c.Id == SortedColumn);
+
     protected override void OnParametersSet()
     {
         _searchValue = GlobalSearchValue;
+        // Visible tracks the columns toggle, not CSS: a column hidden at this width by a responsive
+        // display utility has no header to click, which is exactly why it must stay sortable here.
+        _sortableColumns = Columns.Where(c => c.Sortable && c.Visible).ToList();
+    }
+
+    /// <summary>Re-tapping the active column flips direction; a different one starts ascending — as a header click does.</summary>
+    private async Task ToggleSortAsync(string columnId)
+    {
+        if (!OnSortSelected.HasDelegate) return;
+
+        var direction = (ActiveSortColumn?.Id == columnId && SortDirection == SortDirection.Ascending)
+            ? SortDirection.Descending
+            : SortDirection.Ascending;
+
+        await OnSortSelected.InvokeAsync((columnId, direction));
+    }
+
+    private async Task ClearSortAsync()
+    {
+        // Already unsorted: tapping again would still re-process the data and rewrite persisted state
+        // for no change.
+        if (!OnSortSelected.HasDelegate || ActiveSortColumn is null) return;
+
+        // Report the column being unsorted, not an empty id — the header's cycle-to-none reports the
+        // column too, so consumers of OnSort see one shape for "unsort" whichever route produced it.
+        // Direction=None is what actually clears it.
+        await OnSortSelected.InvokeAsync((SortedColumn ?? string.Empty, SortDirection.None));
     }
 
     private async Task HandleSearchChanged()

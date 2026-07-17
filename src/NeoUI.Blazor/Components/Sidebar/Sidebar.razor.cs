@@ -54,6 +54,15 @@ public partial class Sidebar : ComponentBase, IDisposable
     public bool AutoDetectActive { get; set; } = false;
 
     /// <summary>
+    /// Whether the mobile sheet closes itself when navigation occurs.
+    /// On mobile the sidebar is a modal sheet covering the page, so staying open after a menu item
+    /// navigates would leave it hiding the very page it just opened.
+    /// Default is true.
+    /// </summary>
+    [Parameter]
+    public bool CloseMobileOnNavigate { get; set; } = true;
+
+    /// <summary>
     /// Additional attributes to apply to the sidebar element.
     /// </summary>
     [Parameter(CaptureUnmatchedValues = true)]
@@ -208,29 +217,35 @@ public partial class Sidebar : ComponentBase, IDisposable
             }
 
             _subscribedContext = Context;
-
-            // Set up or tear down navigation listener based on AutoDetectActive
-            SetupNavigationListener();
         }
+
+        // Outside the context-changed branch on purpose: the listener depends on parameters, not on the
+        // context reference, and SidebarProvider creates its context once — so leaving this inside meant
+        // a later AutoDetectActive/CloseMobileOnNavigate change was silently ignored for the component's
+        // lifetime. _isNavigationListenerActive makes this idempotent to call on every parameter set.
+        SetupNavigationListener();
     }
 
     /// <summary>
-    /// Sets up or tears down the navigation listener based on AutoDetectActive setting.
+    /// Sets up or tears down the navigation listener.
+    /// Two independent features need it — active-state detection and closing the mobile sheet on
+    /// navigation — so it is attached whenever either is enabled, and each is re-checked when the
+    /// event fires rather than being baked into whether we subscribe.
     /// </summary>
     private void SetupNavigationListener()
     {
-        if (AutoDetectActive && !_isNavigationListenerActive)
+        var needsListener = AutoDetectActive || CloseMobileOnNavigate;
+
+        if (needsListener && !_isNavigationListenerActive)
         {
-            // Enable navigation tracking
             NavigationManager.LocationChanged += OnLocationChanged;
             _isNavigationListenerActive = true;
 
             // Set initial path
-            UpdateCurrentPath();
+            if (AutoDetectActive) UpdateCurrentPath();
         }
-        else if (!AutoDetectActive && _isNavigationListenerActive)
+        else if (!needsListener && _isNavigationListenerActive)
         {
-            // Disable navigation tracking
             NavigationManager.LocationChanged -= OnLocationChanged;
             _isNavigationListenerActive = false;
         }
@@ -242,11 +257,21 @@ public partial class Sidebar : ComponentBase, IDisposable
     }
 
     /// <summary>
-    /// Handles navigation location changes to update current path for active state detection.
+    /// Handles navigation location changes: updates the current path for active-state detection, and
+    /// dismisses the mobile sheet so it does not sit on top of the page that was just navigated to.
     /// </summary>
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        UpdateCurrentPath();
+        if (AutoDetectActive) UpdateCurrentPath();
+
+        // Deliberately not gated on IsMobile. SetIsMobile never clears OpenMobile, so widening past the
+        // mobile breakpoint with the sheet open leaves OpenMobile stuck true (the Sheet just stops being
+        // rendered) — and narrowing back would pop it open unprompted. Clearing it on any navigation
+        // tidies that up too. On desktop it is a no-op: SetOpenMobile returns early when unchanged,
+        // and desktop open/closed is the separate Open field.
+        // SetOpenMobile raises StateChanged, which this component already re-renders on.
+        if (CloseMobileOnNavigate && Context is { OpenMobile: true })
+            Context.SetOpenMobile(false);
     }
 
     /// <summary>
