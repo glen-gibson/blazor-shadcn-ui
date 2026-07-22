@@ -105,8 +105,12 @@ public static class ServiceCollectionExtensions
         // Register ThemeService for theme management
         services.AddScoped<ThemeService>();
 
-        // Register ToastService
-        services.AddSingleton<IToastService, ToastService>();
+        // Register ToastService. Scoped, NOT singleton: ToastService holds a mutable per-user toast list, so a
+        // singleton in Blazor Server shares ONE store across every circuit on the server — a toast shown from
+        // one circuit renders in all of them (e.g. a broadcast notification Toast.Show'd in each open tab
+        // duplicates across tabs). Scoped gives each circuit its own store; in WebAssembly (single app-wide
+        // scope) it behaves identically to the old singleton, so this is safe in both hosting models.
+        services.AddScoped<IToastService, ToastService>();
 
         return services;
     }
