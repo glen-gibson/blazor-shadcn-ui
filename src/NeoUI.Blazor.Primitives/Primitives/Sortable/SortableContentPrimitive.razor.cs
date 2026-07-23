@@ -36,18 +36,35 @@ public partial class SortableContentPrimitive : ComponentBase, IAsyncDisposable
         if (firstRender && Context is not null && !_jsInitialized)
         {
             _jsInitialized = true;
-            _jsModule = await JS.InvokeAsync<IJSObjectReference>(
-                "import", "./_content/NeoUI.Blazor.Primitives/js/primitives/sortable.js");
+            try
+            {
+                var jsModule = await JS.InvokeAsync<IJSObjectReference>(
+                    "import", "./_content/NeoUI.Blazor.Primitives/js/primitives/sortable.js");
 
-            Context.JsModule = _jsModule;
+                // The component (or its cascading Context) may have been disposed while the dynamic
+                // import was in flight — e.g. a fast tab switch tears the sortable down mid-init. Bail
+                // before touching Context.DotNetRef, which is disposed on teardown and would throw
+                // ObjectDisposedException when serialized for the JS "init" call.
+                if (_disposed)
+                {
+                    await jsModule.DisposeAsync();
+                    return;
+                }
 
-            await _jsModule.InvokeVoidAsync(
-                "init",
-                _containerRef,
-                Context.DotNetRef,
-                Context.InstanceId,
-                Context.Orientation.ToString().ToLowerInvariant(),
-                Context.Group);
+                _jsModule = jsModule;
+                Context.JsModule = _jsModule;
+
+                await _jsModule.InvokeVoidAsync(
+                    "init",
+                    _containerRef,
+                    Context.DotNetRef,
+                    Context.InstanceId,
+                    Context.Orientation.ToString().ToLowerInvariant(),
+                    Context.Group);
+            }
+            catch (ObjectDisposedException) { /* DotNetRef disposed between the guard and the JS call */ }
+            catch (JSDisconnectedException) { /* circuit went away mid-init */ }
+            catch (TaskCanceledException) { /* navigation/teardown cancelled the interop */ }
         }
     }
 
